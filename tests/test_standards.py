@@ -110,3 +110,24 @@ def test_edit_lint_hook_runs_configured_linter(tmp_path):
     assert flagged.returncode == 2 and "bad" in flagged.stderr
     ignored = run(hook, stdin=json.dumps({"tool_input": {"file_path": str(dest / "other.md")}}))
     assert ignored.returncode == 0
+
+
+def test_example_matches_what_new_generates(tmp_path):
+    """examples/my-app is regenerated with: python standards.py new examples/my-app --name my-app
+    --stack python,node --scopes api,web (delete the folder first)."""
+    example = HERE / "examples" / "my-app"
+    fresh = tmp_path / "my-app"
+    assert run("standards.py", "new", fresh, "--name", "my-app", "--stack", "python,node",
+               "--scopes", "api,web").returncode == 0
+
+    def files(root):
+        return {p.relative_to(root).as_posix(): p for p in root.rglob("*")
+                if (p.is_file() or p.is_symlink()) and "__pycache__" not in p.parts}
+
+    want, have = files(fresh), files(example)
+    assert sorted(have) == sorted(want), "example is stale: regenerate it (see docstring)"
+    for rel, path in want.items():
+        if path.is_symlink():
+            assert have[rel].is_symlink()
+        else:
+            assert have[rel].read_bytes().replace(b"\r\n", b"\n") == path.read_bytes(), f"{rel} is stale"
