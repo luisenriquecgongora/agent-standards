@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A repo created from the template must pass its own checks and match the template.
+jobs:
+  template:
+    name: New repo from template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create a repo from the template
+        run: python standards.py new "$RUNNER_TEMP/demo" --name demo --scopes api
+
+      - name: Its verify passes and it matches the template
+        run: |
+          python "$RUNNER_TEMP/demo/scripts/verify.py"
+          python standards.py check "$RUNNER_TEMP/demo"
