@@ -1,0 +1,24 @@
+{
+  "version": "1.1.0",
+  "synced_files": [
+    "CLAUDE.md",
+    ".claude/hooks/lint_edited.py",
+    ".commitlintrc.json",
+    ".github/workflows/lint-commits.yml",
+    "scripts/setup-hooks.sh"
+  ],
+  "verify": {
+    "path": "scripts/verify.py",
+    "config_start": "# --- Repo-specific configuration",
+    "config_end": "# ----"
+  },
+  "agents": {
+    "path": "AGENTS.md",
+    "shared_sections": ["1", "2", "4", "10"]
+  },
+  "stamp": ".agent-standards",
+  "discover": {
+    "root": "..",
+    "max_depth": 2
+  }
+}
