@@ -12,7 +12,7 @@ Create a repo that has the standards from its first commit. Takes about 10 minut
 | Bash | `bash --version` | On Windows: **Git Bash**, installed with Git for Windows |
 | **Windows only:** symlinks enabled | `git config --get core.symlinks` prints `true` | Turn on Developer Mode (Settings → System → For developers), then `git config --global core.symlinks true` |
 
-And a clone of this repo next to your projects (see [Where to clone it](../README.md#where-to-clone-it)).
+And a clone of this repo (see [Where to put it](../README.md#where-to-put-it-and-where-to-run-it)).
 
 The whole process at a glance:
 

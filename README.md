@@ -145,9 +145,43 @@ Some files have a part in each layer: in `AGENTS.md` four sections are shared an
 `verify.py` the program is shared and its configuration block (`CHECKS`, ...) is the repo's.
 The full list is in [docs/reference.md](docs/reference.md#what-is-shared-and-what-each-repo-owns).
 
-## Where to clone it
+## Where to put it, and where to run it
 
-Clone this repo **next to** the repos it manages, in the folder that holds your projects, not inside one of them:
+`agent-standards` can live anywhere, and works on **one repo or a whole folder of repos**. Like git, it looks at
+**the folder you run it in**:
+
+| You run `check` or `sync` in... | It manages |
+| :--- | :--- |
+| A folder of repos (`~/projects/`) | Every managed repo in it, up to two folder levels down |
+| A managed repo, or any folder inside it (`my-api/src/`) | That repo |
+| A repo that is also a workspace (it has its own stamp and managed repos inside it) | That repo and the managed repos inside it |
+| The `agent-standards` folder itself | The repos in the folder that holds it |
+
+A repo is **managed** when it has an `.agent-standards` file at its root (see the next section). Folders without
+one are ignored. To start from another folder, add `--root <folder>`; to pick repos yourself, name them:
+`python standards.py check ~/code/my-api ~/work/my-web`.
+
+```mermaid
+flowchart TD
+    run["You run: python standards.py check<br/>in some folder"] --> up{"Is this folder, or a folder above it,<br/>a repo with .agent-standards?"}
+    up -->|yes| one["➕ that repo"]
+    up -->|no| down
+    one --> down{"Repos with .agent-standards<br/>up to 2 levels below?"}
+    down -->|yes| many["➕ each of them"]
+    down -->|no| result
+    many --> result["check / sync those repos"]
+
+    classDef start fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef found fill:#dcfce7,stroke:#16a34a,color:#14532d
+    class run,result start
+    class up,down gate
+    class one,many found
+```
+
+### Layout 1: a folder of repos
+
+The usual setup: clone `agent-standards` next to your repos and run it there.
 
 ```mermaid
 flowchart TD
@@ -188,11 +222,39 @@ flowchart TD
 cd ~/projects
 git clone git@github.com:luisenriquecgongora/agent-standards.git
 # or: git clone https://github.com/luisenriquecgongora/agent-standards.git
+python agent-standards/standards.py check            # all managed repos in ~/projects
 ```
 
-`check` and `sync` find managed repos by looking for an `.agent-standards` file in the folder above this one and
-one level below it (`"discover"` in `standards.json`): that is how `clients/my-sdk/` is found. Cloned somewhere
-else? Everything still works: name the repos instead, e.g. `python standards.py check ~/code/my-api ~/work/my-web`.
+### Layout 2: one repo
+
+Keep `agent-standards` anywhere (your home folder, a tools folder, or even inside the repo, e.g.
+`my-api/tools/agent-standards/`) and run it from inside the repo:
+
+```mermaid
+flowchart LR
+    subgraph repo["📁 my-api/ · a managed repo"]
+        direction TB
+        s["📄 .agent-standards"]
+        src["📁 src/ · tests/ · docs/"]
+        tool["📁 tools/agent-standards/<br/>optional: the tool can live here too"]
+    end
+    you["you, in my-api/ or my-api/src/"] -->|python tools/agent-standards/standards.py check| repo
+
+    classDef tool fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef stamp fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef plain fill:#f3f4f6,stroke:#9ca3af,color:#374151
+    class tool,you tool
+    class s stamp
+    class src plain
+    style repo fill:#f0fdf4,stroke:#16a34a
+```
+
+```bash
+cd ~/code/my-api
+python ~/tools/agent-standards/standards.py check    # just my-api
+```
+
+The tool never treats itself or its `examples/` as a repo to manage, wherever it lives.
 
 ## The `.agent-standards` file
 

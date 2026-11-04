@@ -40,9 +40,10 @@ The single rule for when a task is finished. Here: `python scripts/verify.py` pa
 A GitHub feature that opens pull requests to update your dependencies (libraries). Configured in
 `.github/dependabot.yml`.
 
-**Discovery / discover root**
-How `check` and `sync` find repos when you do not name them: they search the folder above `agent-standards`
-(the *discover root*) and one level below it for `.agent-standards` files. Set in `standards.json`.
+**Discovery**
+How `check` and `sync` find repos when you do not name them, the way git finds `.git`: the managed repo you are
+in (if any), plus managed repos up to two folder levels below the folder you run them in. `--root` starts
+from another folder. See [the README](../README.md#where-to-put-it-and-where-to-run-it).
 
 **Drift**
 When a repo's copy of a shared file no longer matches the template, because someone edited it in that repo

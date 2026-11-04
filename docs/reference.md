@@ -14,8 +14,8 @@ Run from the `agent-standards` folder.
 | `python standards.py check [<repo> ...] [--diff]` | Reports where repos differ from the template. Exit code 1 if any does | No |
 | `python standards.py sync [<repo> ...]` | Rewrites the shared parts of repos, prints the changelog since each repo's version | Yes, shared parts only; never commits |
 
-Without repo arguments, `check` and `sync` use every repo with an `.agent-standards` file under the
-discover root (see `discover` in `standards.json`).
+Without repo arguments, `check` and `sync` start from the folder you run them in: the managed repo you are in, plus managed repos up to `discover.max_depth` (2) levels
+below. `--root <folder>` starts somewhere else. Running inside `agent-standards` starts from the folder holding it.
 
 ## What is shared and what each repo owns
 
@@ -132,7 +132,7 @@ Hooks that existed before are kept as `<hook>.local` and run after ours.
 ```
 agent-standards/
 ├── standards.py        ← the new / check / sync / stacks commands
-├── standards.json      ← what is shared, current version, where to discover repos
+├── standards.json      ← what is shared, current version, how deep to search for repos
 ├── CHANGELOG.md        ← what changed in each version; sync prints it
 ├── template/           ← the base files of every new repo
 ├── presets/            ← one folder per stack: preset.json, ci-steps.yml, dependabot.yml

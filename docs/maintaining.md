@@ -188,8 +188,8 @@ Edit `standards.json`:
 - `synced_files`: files that must be identical in every repo.
 - `agents.shared_sections`: the `AGENTS.md` section numbers that must be identical.
 - `verify`: where the repo-specific configuration block of `verify.py` starts and ends.
-- `discover`: where `check` and `sync` look for repos (`root` is relative to this repo; `max_depth` is how
-  many folder levels below it are searched).
+- `discover`: `max_depth` is how many folder levels below the current folder `check` and `sync` search for
+  managed repos (default 2).
 
 Adding a file to `synced_files` is a minor version; `check` then reports every repo where that file differs,
 and `sync` makes them identical.

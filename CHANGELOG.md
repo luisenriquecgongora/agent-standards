@@ -7,6 +7,7 @@ Bump `version` in `standards.json` whenever a synced part changes, and add an en
 - `AGENTS.md`: new shared section 11, *Documentation & Traceability*: explain structure and flows with text plus colored diagrams, keep `docs/ARCHITECTURE.md` current in the same pull request, explain every pull request, one intent per commit.
 - `sync` now adds a shared `AGENTS.md` section a repo does not have yet, instead of asking you to add it by hand.
 - New repos get a `docs/ARCHITECTURE.md` starter with the color palette.
+- `check` and `sync` without arguments now start from the folder you run them in, like git: inside a repo they use that repo; in a folder of repos, every managed repo in it. `agent-standards` no longer has to sit next to the repos; `--root` picks another folder.
 - **In each repo:** after `sync`, add `docs/ARCHITECTURE.md` (copy `template/docs/ARCHITECTURE.md` and draw the repo's real parts) and list it in `AGENTS.md` section 6.
 
 ## 1.1.1
