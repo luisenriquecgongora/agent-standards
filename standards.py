@@ -83,12 +83,20 @@ def expected(repo: Path, rel: str) -> tuple[str | None, list[str]]:
     if rel == AGENTS and current is not None:
         wanted, have = agents_sections(template), agents_sections(current)
         shared = CONFIG["agents"]["shared_sections"]
-        notes = [f"section {n} missing; add it by hand" for n in shared if n not in have]
         for n in shared:
             if n in have:
                 tail = have[n][len(have[n].rstrip("\n")):]  # keep the repo's spacing after it
                 current = current.replace(have[n], wanted[n].rstrip("\n") + tail, 1)
-        return current, notes
+        # A shared section the repo lacks goes before its next higher-numbered section, or at the end.
+        for n in sorted((n for n in shared if n not in have), key=int):
+            section = wanted[n].rstrip("\n") + "\n"
+            later = sorted((k for k in agents_sections(current) if int(k) > int(n)), key=int)
+            if later:
+                nxt = agents_sections(current)[later[0]]
+                current = current.replace(nxt, section + "\n" + nxt, 1)
+            else:
+                current = current.rstrip("\n") + "\n\n" + section
+        return current, []
     return template, []
 
 
