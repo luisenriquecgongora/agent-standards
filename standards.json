@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "synced_files": [
     "CLAUDE.md",
     ".claude/hooks/lint_edited.py",

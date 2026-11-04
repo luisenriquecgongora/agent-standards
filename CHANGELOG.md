@@ -3,6 +3,10 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.2.1
+- `AGENTS.md` section 1: no longer reads as "never draw diagrams". It now limits only the pre-change manifest to its table, and points to section 11 for diagrams, which removes a contradiction with section 11.
+- Nothing to do in repos besides `sync`.
+
 ## 1.2.0
 - `AGENTS.md`: new shared section 11, *Documentation & Traceability*: explain structure and flows with text plus colored diagrams, keep `docs/ARCHITECTURE.md` current in the same pull request, explain every pull request, one intent per commit.
 - `sync` now adds a shared `AGENTS.md` section a repo does not have yet, instead of asking you to add it by hand.
