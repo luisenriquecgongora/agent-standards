@@ -1,6 +1,7 @@
 """standards.py: new repos work, check finds drift, sync repairs only the shared parts."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -131,3 +132,17 @@ def test_example_matches_what_new_generates(tmp_path):
             assert have[rel].is_symlink()
         else:
             assert have[rel].read_bytes().replace(b"\r\n", b"\n") == path.read_bytes(), f"{rel} is stale"
+
+
+def test_bad_verify_python_gives_a_clear_message(tmp_path):
+    dest = new_repo(tmp_path)
+    env = {**os.environ, "VERIFY_PYTHON": str(tmp_path / "no-such-python")}
+    result = subprocess.run([sys.executable, str(dest / "scripts/verify.py")], capture_output=True, text=True,
+                            env=env, check=False)
+    assert result.returncode == 1
+    assert "VERIFY_PYTHON is set to" in result.stderr and "Traceback" not in result.stderr
+
+    hook = subprocess.run([sys.executable, str(dest / ".claude/hooks/lint_edited.py")], capture_output=True,
+                          text=True, env=env, check=False,
+                          input=json.dumps({"tool_input": {"file_path": str(dest / "scripts/verify.py")}}))
+    assert hook.returncode == 0 and "Traceback" not in hook.stderr
