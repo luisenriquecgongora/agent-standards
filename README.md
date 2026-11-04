@@ -8,6 +8,68 @@ One shared engineering setup for any number of repos, any language and any codin
   for tools that only read their own folder.
 - Commit-message and commit-size hooks, lint-on-edit feedback for agents, CI, Dependabot, PR and task templates.
 
+## Why this exists
+
+Coding agents (Claude Code, Codex, OpenCode, Antigravity, ...) do good work when a repo tells them the rules
+and lets them prove the work is finished. Without a shared setup, every repo is different, and the agent guesses:
+
+| Without it | With it |
+| :--- | :--- |
+| Each agent reads its own instruction file; the rules drift apart or are missing | One `AGENTS.md` that every agent reads |
+| "Done" means "I think it works"; failures show up later in CI | `verify.py` runs exactly what CI runs, so "passes here" means "passes in CI" |
+| Lint errors pile up until someone notices | The agent is told about a lint error the moment it edits the file, and fixes it in the same turn |
+| Huge commits with vague messages, hard to review or undo | Small commits in a fixed format, each one passing on its own |
+| Recurring tasks are re-explained every time | Skills: step-by-step playbooks any agent can follow |
+| Every new project repeats the setup; fixes are copied by hand into each repo | `new` sets a project up in one command; `sync` sends a fix to every repo |
+
+The setup does not make agents smarter. It makes their work **checkable and consistent**, which is what lets you
+hand them more: you write the task, the agent does it under the repo's rules and proves it with `verify.py`,
+and you review small, clear commits.
+
+### How an agent works in a repo set up this way
+
+```mermaid
+flowchart TD
+    task["Task<br/>(task form in .github/ISSUE_TEMPLATE)"] --> agent["Any coding agent"]
+    agents["AGENTS.md<br/>rules, repo map, commands"] -.->|read first| agent
+    skills[".agents/skills/<br/>playbooks for recurring tasks"] -.->|read when it matches| agent
+    agent --> edit["Edits code"]
+    edit --> lint{"Lint-on-edit hook<br/>(EDIT_LINTERS)"}
+    lint -->|problem found| edit
+    lint -->|clean| verify{"scripts/verify.py<br/>same checks as CI"}
+    verify -->|fails| edit
+    verify -->|passes| commit{"Commit hooks<br/>format, max 5 files"}
+    commit -->|rejected| edit
+    commit -->|accepted| pr["Pull request<br/>(PR template)"]
+    pr --> ci{"CI<br/>verify.py, secret scan, commit lint"}
+    ci -->|fails| edit
+    ci -->|passes| review["You review and merge"]
+```
+
+### How agent-standards keeps repos in line
+
+```mermaid
+flowchart LR
+    subgraph std["agent-standards (this repo)"]
+        template["template/<br/>base files"]
+        presets["presets/<br/>python, node, rust, ..."]
+        config["standards.json<br/>what is shared"]
+        changelog["CHANGELOG.md<br/>what changed per version"]
+    end
+    template --> new(["standards.py new"])
+    presets --> new
+    new --> fresh["New repo<br/>all base files + stamp"]
+    config --> sync(["standards.py sync"])
+    template --> sync
+    changelog --> sync
+    sync -->|rewrites only the shared parts| r1["Existing repo A"]
+    sync --> r2["Existing repo B"]
+    sync --> r3["..."]
+    check(["standards.py check"]) -.->|reports drift, changes nothing| r1
+    check -.-> r2
+    check -.-> r3
+```
+
 ## Where to clone it
 
 Clone this repo **next to** the repos it manages, in the folder that holds your projects, not inside one of them:
