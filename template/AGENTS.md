@@ -41,6 +41,7 @@ All commits must follow:
 | Path | What lives there |
 | :--- | :--- |
 | `TODO` | One row per top-level package, app or service: what it does and its entry point |
+| `docs/ARCHITECTURE.md` | Colored diagrams of the parts of this repo and how data flows between them; start here |
 | `.agents/skills/` | Task playbooks for any coding agent (`SKILL.md` format): `review-change`. Read the matching one before starting such a task. Add new skills here only; `.claude/skills/<name>` is a symlink to each (Claude Code reads only that folder), and `verify.py` checks the links. |
 
 ### 7. Commands
@@ -64,3 +65,10 @@ Instructions live only in this file and skills only in `.agents/skills/`; every 
   2. Add its skills folder to `SKILL_MIRRORS` in `scripts/verify.py`, then run `python scripts/verify.py --only skills --fix` to create the symlinks.
   3. Confirm the tool sees the skills: ask it to list its available skills (e.g. `opencode debug skill`, `codex exec`, `claude -p`, `agy -p`).
 - Never copy a skill into a tool's folder; link it, so there is one copy to keep current.
+
+### 11. Documentation & Traceability
+Code changes arrive faster than people can read them, so a person must be able to follow every change from the docs and the history alone.
+- **Explain visually:** describe structure and flows with text plus a colored Mermaid diagram (GitHub renders it) and a legend for the colors; use the palette in `docs/ARCHITECTURE.md`. Write for an engineer new to the repo: define terms and say why, not only what.
+- **Keep the map current:** `docs/ARCHITECTURE.md` shows the repo's parts and how data flows between them. A change that adds, removes or rewires a part updates that diagram in the same pull request.
+- **Explain every pull request:** what changed and why, how it was verified, and, when a structure or flow changed, a small diagram of the new shape.
+- **One intent per commit:** someone reading the history commit by commit must be able to tell what each one did and why (see section 4).

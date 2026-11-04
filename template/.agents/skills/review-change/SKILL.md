@@ -22,6 +22,7 @@ for a check the change touches. Quote failures exactly.
 ## 3. Correctness
 
 - Does every behavior change come with a test that fails without it?
+- Does a change to the repo's parts or data flow update `docs/ARCHITECTURE.md` and its diagram (`AGENTS.md`, section 11)?
 - Error paths: missing optional dependencies, network failures and bad input degrade and log, they do not crash.
 - TODO: add this repository's correctness traps (code paths that must change together, generated files).
 
