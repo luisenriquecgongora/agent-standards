@@ -87,13 +87,46 @@ def test_old_stamp_is_reported_and_sync_shows_changes(tmp_path):
     assert json.loads((dest / ".agent-standards").read_text())["version"] == standards.VERSION
 
 
-def test_discover_finds_stamped_repos(tmp_path, monkeypatch):
-    for name in ("a", "group/b"):
-        (tmp_path / name).mkdir(parents=True)
-        (tmp_path / name / ".agent-standards").write_text("{}", encoding="utf-8")
+def stamp(folder):
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / ".agent-standards").write_text("{}", encoding="utf-8")
+    return folder.resolve()
+
+
+def test_discover_a_folder_of_repos(tmp_path):
+    a, b = stamp(tmp_path / "a"), stamp(tmp_path / "group" / "b")
     (tmp_path / "unmanaged").mkdir()
-    monkeypatch.setitem(standards.CONFIG, "discover", {"root": str(tmp_path), "max_depth": 2})
-    assert [p.name for p in standards.discover()] == ["a", "b"]
+    assert standards.discover(tmp_path) == [a, b]
+
+
+def test_discover_from_inside_a_repo_finds_that_repo(tmp_path):
+    repo = stamp(tmp_path / "repo")
+    deep = repo / "src" / "pkg"
+    deep.mkdir(parents=True)
+    stamp(tmp_path / "sibling")
+    assert standards.discover(deep) == [repo]
+
+
+def test_discover_a_workspace_that_is_itself_a_repo(tmp_path):
+    root, nested = stamp(tmp_path / "workspace"), stamp(tmp_path / "workspace" / "services" / "api")
+    assert standards.discover(root) == [root, nested]
+
+
+def test_discover_with_agent_standards_inside_a_repo(tmp_path, monkeypatch):
+    repo = stamp(tmp_path / "repo")
+    vendored = repo / "tools" / "agent-standards"
+    stamp(vendored / "examples" / "my-app")          # the copy's own example is never a target
+    monkeypatch.setattr(standards, "HERE", vendored.resolve())
+    assert standards.discover(vendored) == [repo]
+    assert standards.discover(repo) == [repo]
+
+
+def test_discover_from_agent_standards_uses_the_folder_holding_it(tmp_path, monkeypatch):
+    here = (tmp_path / "agent-standards").resolve()
+    stamp(here / "examples" / "my-app")
+    a = stamp(tmp_path / "a")
+    monkeypatch.setattr(standards, "HERE", here)
+    assert standards.discover(here) == [a]
 
 
 def test_edit_lint_hook_runs_configured_linter(tmp_path):
