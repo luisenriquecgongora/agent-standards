@@ -6,8 +6,9 @@ Usage:
     python standards.py sync [<repo> ...]             # rewrite the shared parts, show what changed
     python standards.py stacks                        # list the available stacks
 
-Without repos, check and sync use every repo with an .agent-standards stamp found under the
-discover root in standards.json. What is shared lives in standards.json; stack add-ons live in
+Without repos, check and sync work like git: run inside a managed repo to use that repo, or in a
+folder of repos to use every managed repo in it (up to discover.max_depth levels down). --root
+picks another starting folder. What is shared lives in standards.json; stack add-ons live in
 presets/<stack>/. Everything else in template/ is a starting point the new repo owns from then on.
 sync never commits: review with git diff.
 """
@@ -163,13 +164,26 @@ def sync(repo: Path) -> None:
         print(f"   created {STAMP}: list the repo's stacks in it ({', '.join(available_stacks())})")
 
 
-def discover() -> list[Path]:
-    """Repos with a stamp under the discover root."""
-    root = (HERE / CONFIG["discover"]["root"]).resolve()
+def is_ours(path: Path) -> bool:
+    """This repo or anything inside it (examples, test output)."""
+    return path == HERE or HERE in path.parents
+
+
+def discover(start: Path) -> list[Path]:
+    """Managed repos for a starting folder, the way git finds .git:
+    the managed repo that contains start (if any), plus managed repos up to max_depth folders below it.
+    Starting inside this repo means starting from the folder that holds it."""
+    start = start.resolve()
+    while is_ours(start):
+        start = start.parent
     found = []
+    for folder in (start, *start.parents):
+        if (folder / STAMP).is_file():
+            found.append(folder)
+            break
     for depth in range(1, CONFIG["discover"]["max_depth"] + 1):
-        found += [p.parent for p in root.glob("/".join(["*"] * depth) + "/" + STAMP)]
-    return sorted(p for p in set(found) if p.resolve() != HERE)
+        found += [p.parent.resolve() for p in start.glob("/".join(["*"] * depth) + "/" + STAMP)]
+    return sorted(p for p in set(found) if not is_ours(p))
 
 
 # --- New repos ------------------------------------------------------------------
@@ -255,8 +269,10 @@ def main() -> int:
     p_check = sub.add_parser("check", help="report where repos differ from the template")
     p_check.add_argument("repos", nargs="*", type=Path)
     p_check.add_argument("--diff", action="store_true")
+    p_check.add_argument("--root", type=Path, default=Path.cwd(), help="where to look for repos (default: here)")
     p_sync = sub.add_parser("sync", help="rewrite the shared parts of repos from the template")
     p_sync.add_argument("repos", nargs="*", type=Path)
+    p_sync.add_argument("--root", type=Path, default=Path.cwd(), help="where to look for repos (default: here)")
     sub.add_parser("stacks", help="list the available stacks")
     args = parser.parse_args()
 
@@ -270,9 +286,10 @@ def main() -> int:
     if args.command == "new":
         return new(args.dest, args.name, items(args.scopes), items(args.stack))
 
-    repos = [r.resolve() for r in args.repos] or discover()
+    repos = [r.resolve() for r in args.repos] or discover(args.root)
     if not repos:
-        print(f"no repos given and none with {STAMP} found", file=sys.stderr)
+        print(f"no repos given, and no {STAMP} file in or below {args.root.resolve()}; "
+              "run this inside a repo or a folder of repos, or pass --root", file=sys.stderr)
         return 1
     failed = False
     for repo in repos:
