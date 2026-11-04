@@ -8,6 +8,36 @@ One shared engineering setup for any number of repos, any language and any codin
   for tools that only read their own folder.
 - Commit-message and commit-size hooks, lint-on-edit feedback for agents, CI, Dependabot, PR and task templates.
 
+## Where to clone it
+
+Clone this repo **next to** the repos it manages, in the folder that holds your projects, not inside one of them:
+
+```
+~/projects/
+├── agent-standards/      ← this repo
+├── my-api/               ← managed: has an .agent-standards file
+├── my-web/               ← managed
+├── clients/
+│   └── my-sdk/           ← managed (one level deeper is searched too)
+└── some-other-repo/      ← ignored: no .agent-standards file
+```
+
+```bash
+cd ~/projects
+git clone git@github.com:luisenriquecgongora/agent-standards.git
+python agent-standards/standards.py check
+```
+
+`check` and `sync` without arguments look for repos with an `.agent-standards` file in the folder above this one
+(`"discover": {"root": "..", "max_depth": 2}` in `standards.json`; `..` is relative to this repo). Paths in the
+commands below, like `../my-app`, are examples relative to this repo.
+
+Cloned somewhere else? Everything still works; name the repos instead of relying on discovery:
+
+```bash
+python standards.py check ~/code/my-api ~/work/my-web
+```
+
 ## Start a new repo
 
 ```bash
