@@ -3,6 +3,12 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.2.0
+- `AGENTS.md`: new shared section 11, *Documentation & Traceability*: explain structure and flows with text plus colored diagrams, keep `docs/ARCHITECTURE.md` current in the same pull request, explain every pull request, one intent per commit.
+- `sync` now adds a shared `AGENTS.md` section a repo does not have yet, instead of asking you to add it by hand.
+- New repos get a `docs/ARCHITECTURE.md` starter with the color palette.
+- **In each repo:** after `sync`, add `docs/ARCHITECTURE.md` (copy `template/docs/ARCHITECTURE.md` and draw the repo's real parts) and list it in `AGENTS.md` section 6.
+
 ## 1.1.1
 - `verify.py`: a `VERIFY_PYTHON` that does not exist now stops with a clear message instead of a traceback. It may also name a program on PATH, e.g. `VERIFY_PYTHON=python3.12`.
 - `lint_edited.py`: stays silent in that case instead of failing.
