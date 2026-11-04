@@ -11,6 +11,28 @@ Words you may not know are explained in the [glossary](glossary.md).
 2. Before you say a task is done: `python scripts/verify.py` passes.
 3. Commit small, with messages like `fix(api): handle empty request`.
 
+```mermaid
+flowchart LR
+    setup["① once per clone<br/>bash scripts/setup-hooks.sh"] --> code["② write code<br/>(you or an agent)"]
+    code --> verify{"③ python scripts/verify.py"}
+    verify -->|FAILED| code
+    verify -->|passed| commit{"④ git commit<br/>hooks check it"}
+    commit -->|rejected| code
+    commit -->|accepted| push["⑤ push / pull request<br/>CI runs the same checks"]
+
+    classDef once fill:#ede9fe,stroke:#7c3aed,color:#3b0764
+    classDef work fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d
+    class setup once
+    class code work
+    class verify,commit gate
+    class push done
+    linkStyle 2,4 stroke:#dc2626,color:#dc2626
+```
+
+🟪 once · 🟦 your work · 🟨 automatic checks · 🟩 shared with the team · red arrows: fix and try again
+
 ## 1. Set up once per clone
 
 After cloning the repo, from its root folder:
@@ -73,7 +95,33 @@ Messages git writes itself (`Merge ...`, `Revert "..."`, `fixup! ...`) are alway
 
 ### Size and content of a commit
 
-The `pre-commit` hook rejects a commit that:
+What happens when you run `git commit`:
+
+```mermaid
+flowchart TD
+    start["git commit"] --> ws{"Whitespace clean?"}
+    ws -->|no| r1["❌ Whitespace Error"]
+    ws -->|yes| size{"5 files or fewer?<br/>(12 inside one package)"}
+    size -->|no| r2["❌ Granularity Violation"]
+    size -->|yes| mix{"Config and source<br/>kept apart?"}
+    mix -->|no| r3["❌ Isolation Violation"]
+    mix -->|yes| msg{"Message is<br/>type(scope): text?"}
+    msg -->|no| r4["❌ Format Error"]
+    msg -->|yes| ok["✅ Committed"]
+
+    classDef step fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef bad fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef good fill:#dcfce7,stroke:#16a34a,color:#14532d
+    class start step
+    class ws,size,mix,msg gate
+    class r1,r2,r3,r4 bad
+    class ok good
+```
+
+The first three checks are the `pre-commit` hook; the message check is the `commit-msg` hook. A rejected
+commit is not made: fix the problem and run `git commit` again. In detail, the `pre-commit` hook rejects a
+commit that:
 
 | Rule | Why | Fix |
 | :--- | :--- | :--- |

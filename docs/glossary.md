@@ -7,9 +7,10 @@ A program that reads and edits code for you from instructions in plain language:
 OpenCode, Cursor, Copilot, Antigravity. In these docs, "the agent" is whichever one you use.
 
 **`.agent-standards` (the stamp)**
-A small file at the root of every repo that uses these standards. It records which version of the standards
-the repo has and which stacks it uses, e.g. `{"version": "1.1.0", "stacks": ["python", "node"]}`. `check` and
-`sync` find repos by looking for this file.
+A small file at the root of every repo that uses these standards: **one per repo, never in subfolders**. It
+records which version of the standards the repo has and which stacks it uses, e.g.
+`{"version": "1.1.1", "stacks": ["python", "node"]}`. `check` and `sync` find repos by looking for this file.
+See [the README](../README.md#the-agent-standards-file).
 
 **`AGENTS.md`**
 A file of instructions at the root of a repo, written for coding agents (and useful to people too): how to

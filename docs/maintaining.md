@@ -27,6 +27,37 @@ python standards.py check
 
 ## Change a shared rule
 
+```mermaid
+flowchart LR
+    subgraph here["🟦 in agent-standards"]
+        direction TB
+        e["① edit template/"] --> v["② bump version<br/>standards.json"]
+        v --> c["③ CHANGELOG.md entry"]
+        c --> x["④ regenerate example"]
+        x --> t{"⑤ ruff + pytest"}
+        t -->|fail| e
+        t -->|pass| p["⑥ commit + push"]
+    end
+    subgraph out["🟩 in the repos"]
+        direction TB
+        one["⑦ sync ONE repo<br/>diff, verify, commit, push"] --> ci{"its CI"}
+        ci -->|fail| fix["fix the template<br/>(back to ①)"]
+        ci -->|pass| all["sync the rest<br/>verify, commit, push each"]
+    end
+    p --> one
+
+    classDef std fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef repo fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef bad fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    class e,v,c,x,p std
+    class one,all repo
+    class t,ci gate
+    class fix bad
+    style here fill:#eff6ff,stroke:#2563eb
+    style out fill:#f0fdf4,stroke:#16a34a
+```
+
 1. **Edit the file under `template/`.** For example `template/scripts/setup-hooks.sh`, or a shared section
    (1, 2, 4 or 10) of `template/AGENTS.md`.
 2. **Bump the version** in `standards.json`, using [semantic versioning](https://semver.org):

@@ -14,6 +14,24 @@ Create a repo that has the standards from its first commit. Takes about 10 minut
 
 And a clone of this repo next to your projects (see [Where to clone it](../README.md#where-to-clone-it)).
 
+The whole process at a glance:
+
+```mermaid
+flowchart LR
+    s1["① choose stacks<br/>standards.py stacks"] --> s2["② create<br/>standards.py new"]
+    s2 --> s3["③ first commit<br/>then setup-hooks.sh"]
+    s3 --> s4["④ fill in TODOs<br/>AGENTS.md, review skill"]
+    s4 --> s5["⑤ point CHECKS<br/>at your code"]
+    s5 --> s6["⑥ add skills<br/>as you go"]
+
+    classDef auto fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef you fill:#dcfce7,stroke:#16a34a,color:#14532d
+    class s1,s2,s3 auto
+    class s4,s5,s6 you
+```
+
+🟦 commands you run (a few minutes) · 🟩 what only you can write (most of the time)
+
 ## 1. Choose your stacks
 
 ```bash
