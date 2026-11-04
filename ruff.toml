@@ -1,0 +1,5 @@
+# Pinned so local runs and CI agree, whatever ruff config the machine has.
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "B"]
