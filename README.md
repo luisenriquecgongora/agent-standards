@@ -48,7 +48,9 @@ git init && git add -A && git commit -m "chore: start from agent standards"
 bash scripts/setup-hooks.sh        # after the first commit: the hook caps commits at 5 files
 ```
 
-The `new` command above creates:
+The `new` command above creates the layout below. Browse the full result in
+[`examples/my-app/`](examples/my-app/): it is exactly what that command generates (a test keeps it current).
+Its `.github/` files are inactive there, because GitHub only runs workflows at a repo's root.
 
 ```
 my-app/
