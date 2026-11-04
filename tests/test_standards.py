@@ -146,3 +146,18 @@ def test_bad_verify_python_gives_a_clear_message(tmp_path):
                           text=True, env=env, check=False,
                           input=json.dumps({"tool_input": {"file_path": str(dest / "scripts/verify.py")}}))
     assert hook.returncode == 0 and "Traceback" not in hook.stderr
+
+
+def test_sync_adds_a_missing_shared_section(tmp_path):
+    dest = new_repo(tmp_path)
+    agents = dest / "AGENTS.md"
+    full = agents.read_text(encoding="utf-8")
+    section_11 = standards.agents_sections(full)["11"]
+    without = full.replace(section_11, "").rstrip("\n") + "\n"
+    without = without.replace(standards.agents_sections(full)["2"], "")  # a middle section too
+    agents.write_text(without, encoding="utf-8")
+    assert run("standards.py", "check", dest).returncode == 1
+
+    assert run("standards.py", "sync", dest).returncode == 0
+    assert agents.read_text(encoding="utf-8") == full
+    assert run("standards.py", "check", dest).returncode == 0
