@@ -59,7 +59,7 @@ flowchart LR
 ```
 
 1. **Edit the file under `template/`.** For example `template/scripts/setup-hooks.sh`, or a shared section
-   (1, 2, 4 or 10) of `template/AGENTS.md`.
+   (1, 2, 4, 10 or 11) of `template/AGENTS.md`.
 2. **Bump the version** in `standards.json`, using [semantic versioning](https://semver.org):
 
    | Bump | When | Example |

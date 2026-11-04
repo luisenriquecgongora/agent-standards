@@ -24,7 +24,7 @@ Set in `standards.json`.
 | Shared: identical in every repo, updated by `sync` | Owned: a starting point, the repo changes it freely |
 | :--- | :--- |
 | `CLAUDE.md` | `AGENTS.md` sections 3 (commit scopes), 5 to 9 (definition of done, repo map, commands, gotchas, never) |
-| `AGENTS.md` sections 1, 2, 4 and 10 | The configuration block of `scripts/verify.py`: `VENV`, `CHECKS`, `EDIT_LINTERS`, `SKILL_MIRRORS` |
+| `AGENTS.md` sections 1, 2, 4, 10 and 11 | The configuration block of `scripts/verify.py`: `VENV`, `CHECKS`, `EDIT_LINTERS`, `SKILL_MIRRORS` |
 | `scripts/verify.py`, except its configuration block | `.agents/skills/` (each repo writes its own skills) |
 | `scripts/setup-hooks.sh` | `.claude/settings.json` |
 | `.claude/hooks/lint_edited.py` | `.github/workflows/ci.yml`, `.github/dependabot.yml` |
@@ -57,13 +57,15 @@ my-app/
 │   │   └── lint-commits.yml      ← checks commit messages on pull requests  [synced]
 │   ├── dependabot.yml            ← dependency update PRs: pip, npm and GitHub Actions
 │   └── PULL_REQUEST_TEMPLATE.md
+├── docs/
+│   └── ARCHITECTURE.md           ← colored map of the repo's parts and data flow; keep it current (AGENTS.md section 11)
 ├── scripts/
 │   ├── setup-hooks.sh            ← installs the commit hooks, once per clone  [synced]
 │   └── verify.py                 ← definition of done: ruff, pytest and tsc for these stacks  [synced, except its configuration block]
-├── .agent-standards              ← {"version": "1.1.0", "stacks": ["python", "node"]}
+├── .agent-standards              ← {"version": "1.2.0", "stacks": ["python", "node"]}
 ├── .commitlintrc.json            ← commit message rules used by CI  [synced]
 ├── .gitignore                    ← .env, plus each stack's folders: .venv/, __pycache__/, node_modules/, dist/, ...
-├── AGENTS.md                     ← instructions for every coding agent; scopes `api`, `web`  [sections 1, 2, 4, 10 synced]
+├── AGENTS.md                     ← instructions for every coding agent; scopes `api`, `web`  [sections 1, 2, 4, 10, 11 synced]
 └── CLAUDE.md                     ← "@AGENTS.md": Claude Code reads the same instructions  [synced]
 ```
 
@@ -81,6 +83,8 @@ my-app/
 | 8 | Gotchas | No | What newcomers get wrong |
 | 9 | Never | No | Hard rules: secrets, force-push, personal data, ... |
 | 10 | Supporting another coding agent | Yes | How a new agent gets the same instructions and skills |
+| 11 | Documentation & Traceability | Yes | Text plus colored diagrams; keep `docs/ARCHITECTURE.md` current; explain every PR |
+| 11 | Documentation & Traceability | Yes | Text plus colored diagrams; keep `docs/ARCHITECTURE.md` current; explain every PR |
 
 ## verify.py configuration block
 

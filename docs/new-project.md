@@ -105,6 +105,7 @@ Search for `TODO`:
 | `AGENTS.md` section 7, *Commands* | How to install, run and test the project |
 | `AGENTS.md` section 8, *Gotchas* | What a newcomer would get wrong: hard-coded ports, generated files, build order |
 | `.agents/skills/review-change/SKILL.md` | The checks a reviewer must not forget in this repo |
+| `docs/ARCHITECTURE.md` | A colored diagram of the repo's parts and how data flows between them, using the palette at its top. People use it to follow changes made faster than they can read code |
 
 Write these for a new team member. An agent reads them before every task, so precise beats long.
 

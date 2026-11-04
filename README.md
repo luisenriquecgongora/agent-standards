@@ -26,6 +26,7 @@ shared setup, every repo is different, and the agent (or a new team member) has 
 | Lint errors pile up until someone notices | The agent is told about a lint error the moment it edits a file, and fixes it right away |
 | Huge commits with vague messages, hard to review or undo | Small commits in a fixed format, each one working on its own |
 | Recurring tasks are explained again every time | Skills: step-by-step playbooks any agent can follow |
+| Agents change code faster than people can read it; nobody can say what changed or why | Every repo keeps `docs/ARCHITECTURE.md`, a colored map of its parts, current, and every pull request explains what, why and how it was verified, with a diagram when a flow changed |
 | Every new project repeats the setup; fixes are copied by hand into each repo | `new` sets a project up in one command; `sync` sends a fix to every repo |
 
 The setup does not make agents smarter. It makes their work **checkable and consistent**, which is what lets you
@@ -114,7 +115,7 @@ flowchart TB
         subgraph base["🟪 Shared base: identical in every repo, updated by sync"]
             direction LR
             b1["CLAUDE.md"]
-            b2["AGENTS.md<br/>sections 1, 2, 4, 10"]
+            b2["AGENTS.md<br/>sections 1, 2, 4, 10, 11"]
             b3["verify.py<br/>the engine"]
             b4["commit hooks<br/>lint hook"]
         end
