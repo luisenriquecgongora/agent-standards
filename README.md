@@ -48,6 +48,39 @@ git init && git add -A && git commit -m "chore: start from agent standards"
 bash scripts/setup-hooks.sh        # after the first commit: the hook caps commits at 5 files
 ```
 
+The `new` command above creates:
+
+```
+my-app/
+├── .agents/
+│   └── skills/
+│       └── review-change/
+│           └── SKILL.md          ← review checklist; add the repo's own skills next to it
+├── .claude/
+│   ├── hooks/
+│   │   └── lint_edited.py        ← lints each file an agent edits (EDIT_LINTERS in verify.py)  [synced]
+│   ├── skills/
+│   │   └── review-change -> ../../.agents/skills/review-change   ← symlink, for Claude Code
+│   └── settings.json             ← agent permissions and the lint hook
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   └── task_spec.yml         ← task form an agent or a person can pick up
+│   ├── workflows/
+│   │   ├── ci.yml                ← runs verify.py, plus Python and Node setup steps from the stacks
+│   │   └── lint-commits.yml      ← checks commit messages on pull requests  [synced]
+│   ├── dependabot.yml            ← pip, npm and GitHub Actions updates
+│   └── PULL_REQUEST_TEMPLATE.md
+├── scripts/
+│   ├── setup-hooks.sh            ← installs the commit-msg and pre-commit hooks  [synced]
+│   └── verify.py                 ← definition of done: ruff, pytest and tsc for these stacks  [synced, except its config block]
+├── .agent-standards              ← {"version": "1.1.0", "stacks": ["python", "node"]}
+├── .commitlintrc.json            [synced]
+├── .gitignore                    ← .env plus .venv/, __pycache__/, node_modules/, dist/, ...
+├── AGENTS.md                     ← instructions for every coding agent; scopes `api`, `web`  [sections 1, 2, 4, 10 synced]
+└── CLAUDE.md                     ← "@AGENTS.md", so Claude Code reads the same instructions  [synced]
+```
+
+`[synced]` parts are kept identical across repos by `sync`; everything else belongs to the new repo.
 Each stack adds its checks to `verify.py`, its lint-on-edit rule, its CI setup steps, its Dependabot
 entry and its `.gitignore` lines. Then fill in the `TODO`s in `AGENTS.md` and
 `.agents/skills/review-change/SKILL.md`, and adjust `CHECKS` and the CI install steps to the real layout.
