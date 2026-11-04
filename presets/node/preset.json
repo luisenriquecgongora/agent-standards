@@ -1,0 +1,20 @@
+{
+  "description": "Node / TypeScript: tsc typecheck, npm updates (add eslint to EDIT_LINTERS once the repo has it)",
+  "checks": [
+    [
+      "node",
+      "typecheck",
+      ".",
+      [
+        "{yarn}",
+        "tsc",
+        "--noEmit"
+      ]
+    ]
+  ],
+  "edit_linters": {},
+  "gitignore": [
+    "node_modules/",
+    "dist/"
+  ]
+}

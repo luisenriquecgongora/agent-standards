@@ -13,6 +13,7 @@
 version: 2
 
 updates:
+  # standards: stack ecosystems
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }

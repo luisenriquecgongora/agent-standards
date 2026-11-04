@@ -1,0 +1,31 @@
+{
+  "description": "Rust: clippy with warnings as errors, cargo test, cargo updates",
+  "checks": [
+    [
+      "rust",
+      "clippy",
+      ".",
+      [
+        "{cargo}",
+        "clippy",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    ],
+    [
+      "rust",
+      "tests",
+      ".",
+      [
+        "{cargo}",
+        "test"
+      ]
+    ]
+  ],
+  "edit_linters": {},
+  "gitignore": [
+    "target/"
+  ]
+}

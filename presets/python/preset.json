@@ -1,0 +1,40 @@
+{
+  "description": "Python: ruff lint, pytest, pip updates",
+  "checks": [
+    [
+      "python",
+      "ruff",
+      ".",
+      [
+        "{ruff}",
+        "check",
+        "."
+      ]
+    ],
+    [
+      "python",
+      "tests",
+      ".",
+      [
+        "{py}",
+        "-m",
+        "pytest",
+        "-q"
+      ]
+    ]
+  ],
+  "edit_linters": {
+    ".py": [
+      "{ruff}",
+      "check",
+      "--quiet",
+      "{file}"
+    ]
+  },
+  "gitignore": [
+    ".venv/",
+    "__pycache__/",
+    ".pytest_cache/",
+    ".ruff_cache/"
+  ]
+}

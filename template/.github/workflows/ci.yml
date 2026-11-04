@@ -6,7 +6,7 @@ on:
   pull_request:
 
 # Every job runs scripts/verify.py, so CI and local runs execute the same checks.
-# Add setup steps (setup-python, setup-node, installs) before "Verify" as the repo grows.
+# Setup steps for each stack go before "Verify" (standards.py new --stack adds them).
 jobs:
   verify:
     name: Verify
@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      # standards: stack setup steps
 
       - name: Verify
         run: python scripts/verify.py
