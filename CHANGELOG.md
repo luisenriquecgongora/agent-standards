@@ -3,6 +3,10 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.2.2
+- `verify.py`: fail in CI / strict mode if any configured check in `CHECKS` is skipped (due to missing directory or uninstalled tool). Prevents false-green CI builds. Added `--strict`, `--allow-skipped`, and `-v/--verbose` logging flags.
+- Nothing to do in repos besides `sync`.
+
 ## 1.2.1
 - `AGENTS.md` section 1: no longer reads as "never draw diagrams". It now limits only the pre-change manifest to its table, and points to section 11 for diagrams, which removes a contradiction with section 11.
 - Nothing to do in repos besides `sync`.

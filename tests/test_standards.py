@@ -194,3 +194,43 @@ def test_sync_adds_a_missing_shared_section(tmp_path):
     assert run("standards.py", "sync", dest).returncode == 0
     assert agents.read_text(encoding="utf-8") == full
     assert run("standards.py", "check", dest).returncode == 0
+
+
+def test_verify_fails_in_ci_when_checks_are_skipped(tmp_path):
+    dest = new_repo(tmp_path)
+    verify = dest / "scripts/verify.py"
+    content = verify.read_text(encoding="utf-8")
+
+    # Inject a check pointing to a non-existent directory
+    broken_check = '("python", "fake_tests", "missing_dir", ["{py}", "-m", "pytest"]),\n'
+    verify.write_text(
+        content.replace(
+            "CHECKS: list[tuple[str, str, str, list[str]]] = []",
+            "CHECKS: list[tuple[str, str, str, list[str]]] = [\n    " + broken_check + "]",
+        ),
+        encoding="utf-8",
+    )
+
+    # Locally without CI env: exits 0 (skipped advisory)
+    clean_env = {k: v for k, v in os.environ.items() if k not in ("CI", "GITHUB_ACTIONS")}
+    res_local = subprocess.run([sys.executable, str(verify)], cwd=dest, capture_output=True, text=True, env=clean_env)
+    assert res_local.returncode == 0
+    assert "NOT COMPLETE" in res_local.stdout
+    assert "missing_dir not found" in res_local.stdout
+
+    # In CI: must exit 1 (fails build)
+    ci_env = {**clean_env, "CI": "true"}
+    res_ci = subprocess.run([sys.executable, str(verify)], cwd=dest, capture_output=True, text=True, env=ci_env)
+    assert res_ci.returncode == 1
+    assert "FAILED:" in res_ci.stderr
+    assert "missing_dir not found" in res_ci.stderr
+
+    # Explicit --allow-skipped in CI exits 0
+    res_override = subprocess.run(
+        [sys.executable, str(verify), "--allow-skipped"],
+        cwd=dest,
+        capture_output=True,
+        text=True,
+        env=ci_env,
+    )
+    assert res_override.returncode == 0
