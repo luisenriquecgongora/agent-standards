@@ -127,11 +127,26 @@ def skill_problems(fix: bool = False) -> list[str]:
 
 
 def main() -> int:
+    is_ci = bool(os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"))
     groups = sorted({group for group, *_ in CHECKS} | {"secrets", "skills"})
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--only", choices=groups)
     parser.add_argument("--fix", action="store_true", help="create missing agent skill symlinks")
+    parser.add_argument("-v", "--verbose", action="store_true", help="log commands and working directories")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        default=is_ci,
+        help="fail if any configured check is skipped (default: true in CI, false locally)",
+    )
+    parser.add_argument(
+        "--allow-skipped",
+        action="store_true",
+        help="allow skipped checks to exit 0 (overrides --strict)",
+    )
     args = parser.parse_args()
+
+    strict = args.strict and not args.allow_skipped
 
     if args.only in (None, "skills"):
         print("-- agent skills", flush=True)
@@ -143,7 +158,13 @@ def main() -> int:
 
     tokens = tool_tokens(python_interpreter())
     skipped: list[str] = []
-    for group, name, cwd, cmd in CHECKS + secret_scan():
+    skipped_required: list[str] = []
+
+    # Required project checks from CHECKS, followed by optional local secret scan
+    items = [(group, name, cwd, cmd, True) for group, name, cwd, cmd in CHECKS]
+    items += [(group, name, cwd, cmd, False) for group, name, cwd, cmd in secret_scan()]
+
+    for group, name, cwd, cmd, is_required in items:
         if args.only and group != args.only:
             continue
         workdir = ROOT / cwd
@@ -154,18 +175,40 @@ def main() -> int:
         elif "{yarn}" in cmd and not any((d / "node_modules").exists() for d in (workdir, ROOT)):
             reason = f"run `yarn install` in {cwd} first"
         elif None in parts:
-            reason = f"{cmd[parts.index(None)].strip('{}')} not installed"
+            missing_tool = cmd[parts.index(None)].strip("{}")
+            reason = f"{missing_tool} not installed"
         if reason:
-            print(f"-- {name}: SKIPPED ({reason})")
+            msg = f"-- {name}: SKIPPED ({reason})"
+            if strict and is_required:
+                print(msg, file=sys.stderr)
+                skipped_required.append(f"{name} ({reason})")
+            else:
+                print(msg)
             skipped.append(name)
             continue
-        print(f"-- {name}", flush=True)
+
         argv = [arg for part in parts for arg in part]
+        if args.verbose or is_ci:
+            rel_cwd = workdir.relative_to(ROOT) if workdir != ROOT else "."
+            print(f"-- {name} [{rel_cwd}]: {' '.join(argv)}", flush=True)
+        else:
+            print(f"-- {name}", flush=True)
+
         if subprocess.run(argv, cwd=workdir).returncode != 0:
             print(f"FAILED: {name}", file=sys.stderr)
             return 1
+
     if skipped:
-        print(f"verify: passed, but NOT COMPLETE. Skipped: {', '.join(skipped)}")
+        summary = f"verify: passed, but NOT COMPLETE. Skipped: {', '.join(skipped)}"
+        if strict and skipped_required:
+            print(summary, file=sys.stderr)
+            print(
+                f"FAILED: {len(skipped_required)} required check(s) skipped in strict/CI mode:\n  - "
+                + "\n  - ".join(skipped_required),
+                file=sys.stderr,
+            )
+            return 1
+        print(summary)
     else:
         print("verify: all checks passed")
     return 0
