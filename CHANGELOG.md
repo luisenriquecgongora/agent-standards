@@ -3,6 +3,12 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.2.3
+- `AGENTS.md` section 1: Added Autonomous Execution Guidelines (high bias for action, zero unnecessary questions, convention over consultation, inspect before inquiring, escalation boundary, non-blocking manifest execution).
+- `AGENTS.md` section 10: Documented AGY (`agy`) `--mode auto` / `settings.json` configuration to prevent interactive tool approval prompts.
+- `AGENTS.md` section 9: Linked "never" actions with the section 1 escalation boundary.
+- Nothing to do in repos besides `sync`.
+
 ## 1.2.2
 - `verify.py`: fail in CI / strict mode if any configured check in `CHECKS` is skipped (due to missing directory or uninstalled tool). Prevents false-green CI builds. Added `--strict`, `--allow-skipped`, and `-v/--verbose` logging flags.
 - Nothing to do in repos besides `sync`.
