@@ -1,0 +1,2 @@
+{"id": "example-01-bugfix", "type": "functional_bugfix", "prompt": "Fix null pointer in request handler when payload is empty.", "target_test": "python scripts/verify.py", "max_turns": 4}
+{"id": "example-02-constraint", "type": "constraint_compliance", "prompt": "Add helper function in utils without modifying core configurations.", "target_test": "python scripts/verify.py", "forbidden_paths": [".github/**", "scripts/verify.py"], "max_files_modified": 2}

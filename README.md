@@ -12,6 +12,7 @@ It creates new repos with that configuration in one command, and keeps existing 
 | Start a new project | [docs/new-project.md](docs/new-project.md) |
 | Change the rules for every repo, add a language or a coding agent | [docs/maintaining.md](docs/maintaining.md) |
 | Look something up: commands, files, settings | [docs/reference.md](docs/reference.md) |
+| Test agent performance and prevent regressions | [docs/evals.md](docs/evals.md) |
 | Understand a term | [docs/glossary.md](docs/glossary.md) |
 
 ## Why this exists

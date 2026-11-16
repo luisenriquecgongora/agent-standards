@@ -4,6 +4,7 @@ Usage:
     python standards.py new <dir> --name <project> [--stack python,node] [--scopes core,api]
     python standards.py check [<repo> ...] [--diff]   # report drift; exit 1 if any
     python standards.py sync [<repo> ...]             # rewrite the shared parts, show what changed
+    python standards.py eval [--repo <path>]          # run evaluation tasks against repo(s)
     python standards.py stacks                        # list the available stacks
 
 Without repos, check and sync work like git: run inside a managed repo to use that repo, or in a
@@ -273,11 +274,49 @@ def main() -> int:
     p_sync = sub.add_parser("sync", help="rewrite the shared parts of repos from the template")
     p_sync.add_argument("repos", nargs="*", type=Path)
     p_sync.add_argument("--root", type=Path, default=Path.cwd(), help="where to look for repos (default: here)")
+    p_eval = sub.add_parser("eval", help="run evaluation tasks against repo(s)")
+    p_eval.add_argument("repos", nargs="*", type=Path, help="repos to evaluate")
+    p_eval.add_argument("--repo", type=Path, default=None, help="single target repo to evaluate")
+    p_eval.add_argument("--suite", choices=["smoke", "full"], default="full", help="suite depth: smoke or full")
+    p_eval.add_argument("--agent", default=None, help="agent command (e.g. 'claude -p')")
+    p_eval.add_argument("--dry-run", action="store_true", help="simulate without calling live agent API")
+    p_eval.add_argument("--root", type=Path, default=Path.cwd(), help="where to look for repos (default: here)")
     sub.add_parser("stacks", help="list the available stacks")
     args = parser.parse_args()
 
     def items(text: str) -> list[str]:
         return [s.strip() for s in text.split(",") if s.strip()]
+
+    if args.command == "eval":
+        from scripts.eval_runner import run_repo_evals
+
+        targets: list[Path] = []
+        if args.repo:
+            targets.append(args.repo.resolve())
+        elif args.repos:
+            targets.extend([r.resolve() for r in args.repos])
+        else:
+            # Check current folder and discovered repos
+            if (Path.cwd() / "evals" / "tasks.jsonl").is_file():
+                targets.append(Path.cwd())
+            else:
+                targets.extend(discover(args.root))
+
+        if not targets:
+            print("No repos found to evaluate. Specify with --repo <path>.", file=sys.stderr)
+            return 1
+
+        total_p = 0
+        total_t = 0
+        for r in targets:
+            p, t = run_repo_evals(r, suite=args.suite, agent_cmd=args.agent, dry_run=args.dry_run)
+            total_p += p
+            total_t += t
+
+        if total_t == 0:
+            print("No evaluation tasks found across target repos.")
+            return 0
+        return 0 if total_p == total_t else 1
 
     if args.command == "stacks":
         for stack in available_stacks():
