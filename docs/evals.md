@@ -1,66 +1,187 @@
-# Evaluation-Driven Development (Evals)
+# Industrial Evaluation-Driven Development (Evals)
 
-How to measure and regression-test coding agent instructions (`AGENTS.md`), skills, and scaffolding across your repositories.
+> *"Software tests test your applications. Evals test the AI systems and agents building and driving them."*
 
-## Overview
+This document outlines the **Industrial Evaluation Framework** in `agent-standards`. It provides statistical rigor, deterministic verification gates, and frontier LLM-as-a-judge scoring to benchmark and regression-test coding agent instructions (`AGENTS.md`), skills, models, and scaffolding across codebases.
 
-Software tests (`scripts/verify.py`) test your **applications**.  
-AI Evals test the **AI developers** writing code in those applications.
+---
 
-When you modify instructions in `template/AGENTS.md` or add a new skill to `agent-standards`, running an eval ensures that your changes actually improve agent capability and don't cause subtle regressions across downstream codebases.
+## 1. System Architecture
+
+The evaluation pipeline combines **hard deterministic invariants** with **qualitative multi-dimensional LLM judging** (G-Eval methodology):
 
 ```
-Task (tasks.jsonl) ➔ Agent Loop (AGENTS.md + Tools) ➔ Code Changes ➔ Grader (verify.py + Invariants) ➔ Scorecard
++-----------------------------------------------------------------------------------------+
+|                                    Evaluation Suite                                     |
+|                                   (evals/tasks.jsonl)                                   |
++-----------------------------------------------------------------------------------------+
+                                             |
+                                             v
++-----------------------------------------------------------------------------------------+
+|                                 Autonomous Agent Loop                                   |
+|                             (AGENTS.md + Tools + Model API)                             |
++-----------------------------------------------------------------------------------------+
+                                             |
+                                             v
+                      +----------------------+----------------------+
+                      |                                             |
+                      v                                             v
++------------------------------------------+  +------------------------------------------+
+|       1. Deterministic Verification       |  |          2. Qualitative Judge            |
+|            (verify.py + Git Diff)        |  |         (LLM-as-a-Judge / G-Eval)        |
++------------------------------------------+  +------------------------------------------+
+| • Test command execution (exit 0)        |  | • Faithfulness (1-5): no hallucinated APIs |
+| • Blast radius limits (max files touched)|  | • Task completion (1-5): full spec met   |
+| • Forbidden paths negative constraints   |  | • Constraint adherence (1-5): boundaries  |
+| • Required AST tokens & style invariants |  | • Code quality (1-5): typed, clean, safe |
++------------------------------------------+  +------------------------------------------+
+                      |                                             |
+                      +----------------------+----------------------+
+                                             |
+                                             v
++-----------------------------------------------------------------------------------------+
+|                            Statistical Analysis & Scorecard                             |
++-----------------------------------------------------------------------------------------+
+| • Wilson 95% Confidence Interval: [Lower% - Upper%]                                     |
+| • Tail Latency Distribution: p50, p90, p95 percentiles                                  |
+| • A/B Regression Delta: Critical regressions, improvements, token spend                 |
+| • Visual GitHub Flavored Markdown PR Scorecard                                          |
++-----------------------------------------------------------------------------------------+
 ```
 
-## Running Evals
+---
 
-From `agent-standards`:
+## 2. CLI Execution Standards
+
+From the `agent-standards` root:
 
 ```bash
-# Evaluate a specific downstream repo
-python standards.py eval --repo ../takient
+# 1. Quick smoke test (dry-run, no live API spend)
+python standards.py eval --repo ../takient --suite smoke --dry-run
 
-# Run a quick smoke test (first task only)
-python standards.py eval --repo ../takient --suite smoke
+# 2. Industrial evaluation with LLM-as-a-Judge (using gpt-4o-mini or gpt-4o)
+python standards.py eval --repo ../takient --judge --judge-model gpt-4o-mini
 
-# Dry-run (validates task definitions without calling live LLMs)
-python standards.py eval --repo ../takient --dry-run
-
-# Run with a live coding agent CLI
-python standards.py eval --repo ../takient --agent "claude -p"
+# 3. A/B Regression check against a baseline release with CI failure gate
+python standards.py eval --repo ../takient \
+  --judge \
+  --baseline baseline_v1.0.json \
+  --fail-on-regression \
+  --output-scorecard pr_scorecard.md \
+  --output-json current_run.json
 ```
 
-## Defining Evaluation Tasks (`evals/tasks.jsonl`)
+---
 
-Each managed repository can maintain an `evals/tasks.jsonl` file with representative tasks (historical bug fixes, feature requests, or invariant checks).
+## 3. Statistical Analysis: Why Wilson Score Intervals?
 
-Each line in `evals/tasks.jsonl` is a JSON object with the following fields:
+In production AI engineering, reporting a raw pass rate (e.g. *"8/10 passed = 80%"*) is statistically misleading because sample sizes are small to medium.
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | string | Yes | Unique task identifier (e.g., `takient-01-harness-parity`) |
-| `prompt` | string | Yes | The natural language task prompt given to the AI agent |
-| `type` | string | No | Category: `functional_bugfix`, `constraint_compliance`, `design_system_rule`, etc. |
-| `target_test` | string | No | Test command to execute (default: `python scripts/verify.py`) |
-| `forbidden_paths` | list[string] | No | Glob patterns of paths the agent must NOT modify (e.g., `["ai-services/**"]`) |
-| `max_files_modified` | integer | No | Blast radius cap: max number of files the agent may touch (e.g., `5`) |
-| `required_strings` | list[string] | No | Text or tokens that MUST be present in modified files (e.g., `["py-20"]`) |
-| `max_turns` | integer | No | Maximum turn budget before timing out (default: `5`) |
+`eval_runner.py` computes the **95% Wilson Score Interval**:
 
-### Example `evals/tasks.jsonl`
+$$\hat{p} \pm z \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}$$
+
+For example:
+* **8/10 (80.0%)** $\rightarrow$ `95% Wilson CI: [49.0% - 94.3%]` (High uncertainty, do not merge high-risk changes).
+* **80/100 (80.0%)** $\rightarrow$ `95% Wilson CI: [71.1% - 86.7%]` (Tight confidence, safe to deploy).
+
+---
+
+## 4. Multi-Dimensional LLM-as-a-Judge Rubric (`judge.py`)
+
+For qualitative outputs that cannot be fully captured by exit codes alone, the judge scores 4 core dimensions on an integer scale (1 to 5):
+
+| Dimension | Weight | Description |
+| :--- | :---: | :--- |
+| **Faithfulness** | `1.0` | Solution avoids hallucinated APIs and adheres strictly to existing repository architecture. |
+| **Task Completion** | `1.5` | Solution completely satisfies all functional and non-functional requirements in the prompt. |
+| **Constraint Adherence** | `1.2` | Solution strictly respects negative constraints, file boundaries, and styling rules. |
+| **Code Quality** | `1.0` | Code is idiomatic, type-safe, contains proper error handling, and introduces zero security vulnerabilities. |
+
+A composite score is calculated:
+
+$$\text{Composite Score} = \frac{\sum (\text{Score}_i \times \text{Weight}_i)}{\sum \text{Weight}_i}$$
+
+* **Pass Threshold:** Composite Score $\ge 4.0$ AND deterministic verification exit code $== 0$.
+* **Offline Fallback:** When `OPENAI_API_KEY` is not present, the judge automatically runs a deterministic AST/diff heuristic analysis with 0ms network latency.
+
+---
+
+## 5. Defining Evaluation Tasks (`evals/tasks.jsonl`)
+
+Each line in `evals/tasks.jsonl` defines an evaluation scenario:
 
 ```json
-{"id": "task-01-bugfix", "type": "functional_bugfix", "prompt": "Fix connection pool timeout when worker disconnects.", "target_test": "pytest tests/test_pool.py -k test_timeout"}
-{"id": "task-02-guard", "type": "constraint_compliance", "prompt": "Add fitness business logic without modifying deprecated services.", "target_test": "pytest tests/test_business.py", "forbidden_paths": ["legacy/**"], "max_files_modified": 3}
-{"id": "task-03-ui", "type": "design_system_rule", "prompt": "Create owner banner adhering to container padding rules.", "target_test": "npm test", "required_strings": ["py-20", "#14B8A6"]}
+{
+  "id": "takient-01-pool-retry",
+  "type": "functional_bugfix",
+  "prompt": "Fix database connection pool timeout when worker disconnects. Ensure exponential backoff.",
+  "target_test": "pytest tests/test_pool.py -k test_timeout",
+  "forbidden_paths": ["legacy/**", "deploy/**"],
+  "max_files_modified": 2,
+  "required_strings": ["retry_count", "backoff_factor"],
+  "max_turns": 4,
+  "expected_output": "def retry_connection(attempt: int)",
+  "rubric": "Must use jittered backoff and log at WARNING level.",
+  "tags": ["database", "reliability", "p0"]
+}
 ```
 
-## Recommended Workflow
+### Supported Schema Fields:
 
-1. **Before Syncing Standards**:
-   - You make edits to `template/AGENTS.md` or `.agents/skills/`.
-   - Run `python standards.py eval --repo ../takient` (and any other pilot repos).
-   - If score is 100%, run `python standards.py sync` with confidence.
-2. **In CI/CD**:
-   - Add `.github/workflows/evals.yml` to run `python standards.py eval` automatically on Pull Requests that touch `AGENTS.md` or shared templates.
+| Field | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `id` | string | Yes | Unique task identifier |
+| `prompt` | string | Yes | Natural language prompt provided to the agent |
+| `type` | string | No | Category: `functional_bugfix`, `constraint_compliance`, `security`, `perf` |
+| `target_test` | string | No | Test command to execute (default: `python scripts/verify.py`) |
+| `forbidden_paths` | list[str] | No | Glob patterns agent must NOT modify |
+| `max_files_modified` | int | No | Blast radius cap on number of modified files |
+| `required_strings` | list[str] | No | Tokens/AST nodes that must be present in modified files |
+| `expected_output` | string | No | Golden reference snippet for pairwise comparison |
+| `rubric` | string | No | Custom prompt guidance for the LLM judge |
+| `tags` | list[str] | No | Filtering tags (e.g. `["p0", "security"]`) |
+
+---
+
+## 6. Continuous Integration & Pull Request Scorecards
+
+Run automatically on every Pull Request modifying `AGENTS.md`, prompts, or agent skills:
+
+```yaml
+# .github/workflows/evals.yml
+name: AI Agent Evals
+on:
+  pull_request:
+    paths:
+      - "template/AGENTS.md"
+      - ".agents/**"
+      - "standards.py"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download Baseline Eval Report
+        run: curl -s https://releases.plaatoos.com/evals/baseline.json -o baseline.json
+      - name: Run Evals & Generate Scorecard
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python standards.py eval \
+            --judge \
+            --baseline baseline.json \
+            --fail-on-regression \
+            --output-scorecard pr_scorecard.md \
+            --output-json current.json
+      - name: Publish Scorecard to PR Summary
+        if: always()
+        run: cat pr_scorecard.md >> $GITHUB_STEP_SUMMARY
+```
+
+This guarantees that regressions are caught before PR merge, giving digital native scale-ups the confidence to deploy model and prompt updates autonomously.

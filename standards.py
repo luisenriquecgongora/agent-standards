@@ -280,6 +280,12 @@ def main() -> int:
     p_eval.add_argument("--suite", choices=["smoke", "full"], default="full", help="suite depth: smoke or full")
     p_eval.add_argument("--agent", default=None, help="agent command (e.g. 'claude -p')")
     p_eval.add_argument("--dry-run", action="store_true", help="simulate without calling live agent API")
+    p_eval.add_argument("--judge", action="store_true", help="enable LLM-as-a-judge rubric scoring")
+    p_eval.add_argument("--judge-model", default="gpt-4o-mini", help="judge model to use (default: gpt-4o-mini)")
+    p_eval.add_argument("--baseline", type=Path, default=None, help="path to baseline JSON report for regression diffs")
+    p_eval.add_argument("--output-json", type=Path, default=None, help="path to write JSON evaluation metrics")
+    p_eval.add_argument("--output-scorecard", type=Path, default=None, help="path to write Markdown PR scorecard")
+    p_eval.add_argument("--fail-on-regression", action="store_true", help="exit with 1 if any task regressed")
     p_eval.add_argument("--root", type=Path, default=Path.cwd(), help="where to look for repos (default: here)")
     sub.add_parser("stacks", help="list the available stacks")
     args = parser.parse_args()
@@ -309,7 +315,18 @@ def main() -> int:
         total_p = 0
         total_t = 0
         for r in targets:
-            p, t = run_repo_evals(r, suite=args.suite, agent_cmd=args.agent, dry_run=args.dry_run)
+            p, t = run_repo_evals(
+                r,
+                suite=args.suite,
+                agent_cmd=args.agent,
+                dry_run=args.dry_run,
+                enable_judge=args.judge,
+                judge_model=args.judge_model,
+                baseline_path=args.baseline,
+                output_json=args.output_json,
+                output_scorecard=args.output_scorecard,
+                fail_on_regression=args.fail_on_regression,
+            )
             total_p += p
             total_t += t
 
