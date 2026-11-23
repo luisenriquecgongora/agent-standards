@@ -496,7 +496,22 @@ def run_hud(log_file: Path, port: int, open_browser: bool) -> None:
     HudServer.log_path = log_file.resolve()
     HudServer.pause_file = log_file.parent / ".cowork-pause"
 
-    url = f"http://localhost:{port}/"
+    server = None
+    target_port = port
+    for p in range(port, port + 20):
+        try:
+            socketserver.TCPServer.allow_reuse_address = True
+            server = socketserver.TCPServer(("", p), HudServer)
+            target_port = p
+            break
+        except OSError:
+            continue
+
+    if not server:
+        print(f"Error: Could not bind HUD server on ports {port} to {port+20}")
+        return
+
+    url = f"http://localhost:{target_port}/"
     print(f"=================================================================")
     print(f"           COWORK LIVE VISION HUD & REAL-TIME SIDECAR            ")
     print(f"=================================================================")
@@ -508,7 +523,6 @@ def run_hud(log_file: Path, port: int, open_browser: bool) -> None:
     if open_browser:
         webbrowser.open(url)
 
-    server = socketserver.TCPServer(("", port), HudServer)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -520,7 +534,7 @@ def run_hud(log_file: Path, port: int, open_browser: bool) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Live Desktop Cowork HUD & Real-Time Vision Overlay")
     parser.add_argument("--log", "-l", default=None, help="Path to business_logs.jsonl or event stream")
-    parser.add_argument("--port", "-p", type=int, default=8765, help="HUD server port (default: 8765)")
+    parser.add_argument("--port", "-p", type=int, default=8899, help="HUD server port (default: 8899)")
     parser.add_argument("--open", action="store_true", help="Launch HUD in browser automatically")
     args = parser.parse_args()
 
