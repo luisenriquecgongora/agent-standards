@@ -3,6 +3,13 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.2
+- Semantic AST Call-Graph & PR Risk Radar:
+  - Added AST symbol parsing (Python `ast` & TypeScript/JavaScript route/symbol extraction) to `scripts/visual-diff.py`.
+  - Added automated PR Risk Radar & Blast Radius Scorecard (triage assessment, blast radius, schema impact, API route changes, test invariants).
+  - Enhanced Mermaid flowchart with semantic sub-nodes for modified/added functions and endpoints.
+  - Enhanced ASCII commit flow boxes with symbol-level indentation.
+
 ## 1.4.1
 - Automated PR & Commit Diagrams:
   - Added `.github/workflows/pr-visual-summary.yml`: automatically generates and updates a sticky PR comment on GitHub with native SVG Mermaid architecture deltas on every pull request.
