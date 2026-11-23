@@ -2,7 +2,7 @@
 <!-- What this PR changes and the reason for it. Link the issue if there is one. -->
 
 ## ⚡ Visual Delta (Fast Inspection)
-<!-- 
+<!--
 Run `python scripts/visual-diff.py` to auto-generate this Mermaid diagram for staged changes,
 or paste your custom flow delta using the docs/ARCHITECTURE.md palette:
 -->
