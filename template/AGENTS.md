@@ -85,7 +85,7 @@ Code changes arrive faster than people can read them, so a person must be able t
 ### 12. Data Protection, Environment Shielding & Fiscal Invariant
 - **Zero-Egress Credential Isolation:** Never inspect, print, or load `.env` files or system environment variables into tool calls, prompts, or commit messages. Always inspect `.env.example` with dummy values when checking expected schemas.
 - **Path Sanitization:** When reporting paths, reference repository-relative paths (`src/module.py`), never absolute paths disclosing the host's `C:` volume or user directories.
-- **Fiscal & Payment XML Quarantine:** 
+- **Fiscal & Payment XML Quarantine:**
   1. Automated scripts, tests, and agent loops must NEVER make network requests to live government fiscal systems (e.g., Polish KSeF production, Spanish FacturaE, Italian SDI) or banking/payment gateways.
   2. All XML invoice generation tests MUST use the local `MockFiscalEngine` or `--dry-run` flag with test NIP/tax identifiers.
   3. Any code executing financial transfers or invoice submissions requires explicit Human-in-the-Loop approval.
