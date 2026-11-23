@@ -3,6 +3,12 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.6
+- Global Ecosystem Topology Map & Vision-in-the-Loop Micro-Crop Verifier:
+  - Added `scripts/fleet-map.py`: autonomous ecosystem topology scanner auditing all 30 monorepos and generating an interactive architecture map with domain clustering.
+  - Added `scripts/vision_verifier.py`: vision-in-the-loop micro-screenshot verification engine measuring pixel deltas around target clicks to confirm DOM and desktop UI reactions.
+  - Updated `scripts/cowork-hud.py`: dynamic port fallback (ports 8899+) with live stream tailing.
+
 ## 1.4.5
 - Desktop Cowork Live Vision HUD & Visual Release Digest:
   - Added `scripts/cowork-hud.py`: live sidecar server and desktop HUD for monitoring real-time agent execution, with simulated/visual targeting reticle overlay, live bounding-box coordinates, active chat bubble callouts, and human interlock (pause/resume).
