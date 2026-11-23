@@ -3,6 +3,16 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.4
+- Agent Cowork & Execution Timeline Replay Dashboard:
+  - Added `scripts/cowork-timeline.py`: standalone interactive HTML timeline dashboard for inspecting agent cowork traces, business logs (`business_logs.jsonl`), inbound replies, and execution streams.
+  - Interactive scrubber slider with dynamic playback engine (Play/Pause, 1x/2x/5x/10x speeds, auto-scroll to active card).
+  - KPI scorecard: Total Steps, DMs Dispatched, Emails Sent, Warm-ups, Skips/404s, Unique Leads, and total session span.
+  - Lead Journey Inspector: filter and track any lead entity across its full lifecycle from discovery to dispatch.
+  - Payload Inspection Drawer: syntax-highlighted JSON drawer and formatted chat/email speech bubble previews.
+  - One-click launch in Chrome/Firefox via `python scripts/cowork-timeline.py --open`.
+- Synchronized fleet standards across managed repositories.
+
 ## 1.4.3
 - Automated UI & Desktop Visual Snapshots (Horizon 2):
   - Added UI & styling component detection (`.tsx`, `.jsx`, `.vue`, `.css`, templates) to `scripts/visual-diff.py`.
