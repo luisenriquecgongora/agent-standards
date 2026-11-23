@@ -1,10 +1,11 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "synced_files": [
     "CLAUDE.md",
     ".claude/hooks/lint_edited.py",
     ".commitlintrc.json",
     ".github/workflows/lint-commits.yml",
+    ".github/workflows/pr-visual-summary.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "scripts/setup-hooks.sh",
     "scripts/open-artifact.py",

@@ -3,6 +3,11 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.1
+- Automated PR & Commit Diagrams:
+  - Added `.github/workflows/pr-visual-summary.yml`: automatically generates and updates a sticky PR comment on GitHub with native SVG Mermaid architecture deltas on every pull request.
+  - Added `prepare-commit-msg` hook to `scripts/setup-hooks.sh`: automatically embeds monospace ASCII flow delta diagrams into multi-file commit bodies, permanently preserving them on GitHub commit pages and `git log`.
+
 ## 1.4.0
 - Visual Change & Architecture Traceability:
   - Added `scripts/visual-diff.py` to auto-generate Mermaid architecture flowcharts, ASCII commit boxes, and interactive browser reports (`scripts/visual-diff.py --open`).
