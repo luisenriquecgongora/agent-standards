@@ -1,5 +1,5 @@
 {
-  "version": "1.4.4",
+  "version": "1.4.5",
   "synced_files": [
     "CLAUDE.md",
     ".claude/hooks/lint_edited.py",
@@ -10,7 +10,9 @@
     "scripts/setup-hooks.sh",
     "scripts/open-artifact.py",
     "scripts/visual-diff.py",
-    "scripts/cowork-timeline.py"
+    "scripts/cowork-timeline.py",
+    "scripts/cowork-hud.py",
+    "scripts/visual-release.py"
   ],
   "verify": {
     "path": "scripts/verify.py",

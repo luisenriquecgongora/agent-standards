@@ -3,6 +3,12 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.5
+- Desktop Cowork Live Vision HUD & Visual Release Digest:
+  - Added `scripts/cowork-hud.py`: live sidecar server and desktop HUD for monitoring real-time agent execution, with simulated/visual targeting reticle overlay, live bounding-box coordinates, active chat bubble callouts, and human interlock (pause/resume).
+  - Added `scripts/visual-release.py`: automated release digest generator compiling AST call-graph diffs, Mermaid release architecture maps, and blast-radius scorecards across commit ranges (`v1.4.0..v1.4.5`).
+  - Added `inbound-autopilot.py` to PlaatoOS & agent tooling: autonomous inbound conversation triage, phone/email harvesting, tailored Polish follow-ups, and CRM synchronization.
+
 ## 1.4.4
 - Agent Cowork & Execution Timeline Replay Dashboard:
   - Added `scripts/cowork-timeline.py`: standalone interactive HTML timeline dashboard for inspecting agent cowork traces, business logs (`business_logs.jsonl`), inbound replies, and execution streams.
