@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -86,6 +87,41 @@ def resolve(part: str, tokens: dict[str, list[str] | None]) -> list[str] | None:
     return [part]
 
 
+SECRET_PATTERNS = [
+    ("Private Key", re.compile(r"-----BEGIN (RSA|EC|DSA|OPENSSH|PRIVATE) KEY-----")),
+    ("OpenAI API Key", re.compile(r"\b(sk-[a-zA-Z0-9]{20,T3BlbkFJ[a-zA-Z0-9]{20,}|sk-proj-[a-zA-Z0-9_-]{40,})\b")),
+    ("Anthropic API Key", re.compile(r"\bsk-ant-api[a-zA-Z0-9_-]{30,}\b")),
+    ("GitHub Token", re.compile(r"\b(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})\b")),
+    ("AWS Key ID", re.compile(r"\b(AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}\b")),
+]
+
+
+def scan_tracked_files_for_secrets() -> list[str]:
+    """Zero-dependency in-tree secret audit scanning tracked files for high-risk credentials."""
+    problems: list[str] = []
+    res = subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=ROOT)
+    if res.returncode != 0:
+        return problems
+    for rel_path in res.stdout.splitlines():
+        # Exclude binaries, images, lockfiles, and test fixtures
+        if rel_path.endswith((".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg", ".lock", ".exe", ".pdf")):
+            continue
+        norm_path = rel_path.replace("\\", "/")
+        if any(marker in norm_path for marker in ("/tests/", "/test/", "test_", "_test.", "/fixtures/")):
+            continue
+        file_path = ROOT / rel_path
+        if not file_path.is_file() or file_path.stat().st_size > 500_000:
+            continue
+        try:
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+            for label, pattern in SECRET_PATTERNS:
+                if pattern.search(content):
+                    problems.append(f"{rel_path}: contains potential {label}")
+        except Exception:
+            pass
+    return problems
+
+
 def secret_scan() -> list[tuple[str, str, str, list[str]]]:
     # "{gitleaks}" resolves to None when it is not installed; CI always runs it.
     return [("secrets", "secret scan", ".", ["{gitleaks}", "git", "--no-banner", "--redact", "."])]
@@ -148,6 +184,13 @@ def main() -> int:
         if problems:
             print("\n".join(problems), file=sys.stderr)
             print("FAILED: agent skills", file=sys.stderr)
+            return 1
+
+    if args.only in (None, "secrets"):
+        secret_problems = scan_tracked_files_for_secrets()
+        if secret_problems:
+            print("-- secret audit: FAILED", file=sys.stderr)
+            print("\n".join(secret_problems), file=sys.stderr)
             return 1
 
     tokens = tool_tokens(python_interpreter())
