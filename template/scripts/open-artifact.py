@@ -88,8 +88,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   </main>
 
   <script>
-    mermaid.initialize({{ 
-      startOnLoad: false, 
+    mermaid.initialize({{
+      startOnLoad: false,
       theme: 'dark',
       themeVariables: {{
         darkMode: true,
@@ -138,29 +138,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 def render_markdown_to_html(md_path: Path, output_html: Path | None = None) -> Path:
     if not md_path.exists():
         raise FileNotFoundError(f"Markdown file not found: {md_path}")
-    
+
     content = md_path.read_text(encoding="utf-8")
     title = md_path.stem.replace("-", " ").replace("_", " ").title()
-    
+
     if output_html is None:
         output_html = md_path.with_suffix(".html")
-        
+
     html_content = HTML_TEMPLATE.format(
         title=title,
         file_name=md_path.name,
         raw_markdown_json=json.dumps(content)
     )
-    
+
     output_html.write_text(html_content, encoding="utf-8")
     return output_html
 
 def open_in_browser(html_path: Path, browser_name: str | None = None):
     abs_path = html_path.resolve()
     file_url = abs_path.as_uri()
-    
+
     chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
     firefox_path = r"C:\Program Files\Mozilla Firefox\firefox.exe"
-    
+
     if browser_name == "chrome" and os.path.exists(chrome_path):
         import subprocess
         subprocess.Popen([chrome_path, str(abs_path)])
@@ -179,10 +179,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python open-artifact.py <path_to_markdown.md> [chrome|firefox]")
         sys.exit(1)
-        
+
     md_file = Path(sys.argv[1])
     browser_pref = sys.argv[2] if len(sys.argv) > 2 else "chrome"
-    
+
     out_html = render_markdown_to_html(md_file)
     print(f"Rendered HTML: {out_html}")
     open_in_browser(out_html, browser_pref)

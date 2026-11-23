@@ -124,12 +124,12 @@ def generate_mermaid(changes: list[tuple[str, str, str | None]]) -> str:
             node_id = f"node_{node_counter}_{sanitize_node_id(file_path)}"
             base_name = file_path.split("/")[-1]
             icon = status_icons.get(status, status)
-            
+
             if status == "R" and old_path:
                 label = f"{icon}: {old_path.split('/')[-1]} ➔ {base_name}"
             else:
                 label = f"{icon}: {base_name}"
-            
+
             lines.append(f'            {node_id}["{label}"]')
 
             if status == "D":
@@ -199,7 +199,7 @@ def open_visual_in_browser(mermaid_content: str, ascii_content: str, changes_cou
 
     md_content = f"""# Visual Change Inspection Report
 
-**Total Changed Files:** {changes_count}  
+**Total Changed Files:** {changes_count}
 Generated for fast human verification before committing or pushing.
 
 ---
