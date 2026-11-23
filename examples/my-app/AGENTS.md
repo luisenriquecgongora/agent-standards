@@ -1,7 +1,12 @@
 # my-app: Engineering Standards & Observability Contract
 
-### 1. Pre-Change Invariant Manifest
-Before executing code modifications touching more than one file, output a compact change manifest table:
+### 1. Pre-Change Invariant Manifest & Autonomous Execution
+- **Autonomous Bias for Action:** Execute tasks end-to-end without pausing for conversational confirmation. Do NOT use interactive question tools or ask clarifying questions for routine technical decisions, naming, library choices, or architectural trade-offs. Apply the **"Convention over Consultation"** rule: pick the standard, simplest idiom, implement it, and document assumptions in commit messages.
+- **Inspect Before Inquiring:** Never ask a question that can be answered by searching the repository, reading existing tests, or checking config files.
+- **The Escalation Boundary (Approval Required):** Stop and request user approval ONLY if:
+  1. An action is **irreversible or destructive** (e.g., dropping databases/tables, deleting files or directories, destructive git commands like `push --force` or `reset --hard`, or purging untracked data). You **MUST analyze the impact, explain the blast radius, and require explicit confirmation** before running any such command.
+  2. Requirements are fundamentally contradictory with zero sensible default after inspecting the codebase.
+- **Pre-Change Invariant Manifest:** Before executing code modifications touching more than one file, output a compact change manifest table and **immediately proceed to implementation in the same turn without waiting for confirmation**:
 
 | Target File / Module | Nature of Change | Breaking / Invariant Impact |
 | :--- | :--- | :--- |
@@ -53,13 +58,17 @@ All commits must follow:
 - TODO: things a newcomer would get wrong (hard-coded ports, generated files, build order).
 
 ### 9. Never
-- Never read, print or commit `.env` files or API keys.
+- Never read, print, search or commit `.env` files, `.env.*` variants, API keys, or private keys.
+- Never pass unshielded environment variables or Windows `C:` volume user paths into external requests or prompt contexts.
+- Never execute live network submissions to external XML servers (such as Polish KSeF 2.0, Spanish FacturaE, Italian SDI, or banking CAMT.053) or payment endpoints. Always use local mocks, test tax IDs, and dry-run flags.
 - Never force-push or rewrite published history.
 - Never commit build output, `node_modules/` or virtualenvs.
+- Never execute destructive or data-dropping commands without explicit human approval (see section 1).
+- Never pause or ask confirmation for routine, non-destructive implementation work.
 
 ### 10. Supporting another coding agent
 Instructions live only in this file and skills only in `.agents/skills/`; every agent tool gets them from there.
-- **Tool reads `AGENTS.md` and `.agents/skills/`** (Codex, OpenCode, Cursor, Copilot, Antigravity): nothing to do.
+- **Tool reads `AGENTS.md` and `.agents/skills/`** (Codex, OpenCode, Cursor, Copilot, Antigravity): nothing to do. For Antigravity CLI (`agy`), run with `--mode auto` or configure `"agentMode": "auto"` in `~/.gemini/antigravity-cli/settings.json` to prevent interactive tool approval prompts.
 - **Tool reads only its own files** (like Claude Code: `CLAUDE.md`, `.claude/skills/`):
   1. Add a one-line pointer file to `AGENTS.md` in the tool's format (see `CLAUDE.md`).
   2. Add its skills folder to `SKILL_MIRRORS` in `scripts/verify.py`, then run `python scripts/verify.py --only skills --fix` to create the symlinks.
@@ -72,3 +81,11 @@ Code changes arrive faster than people can read them, so a person must be able t
 - **Keep the map current:** `docs/ARCHITECTURE.md` shows the repo's parts and how data flows between them. A change that adds, removes or rewires a part updates that diagram in the same pull request.
 - **Explain every pull request:** what changed and why, how it was verified, and, when a structure or flow changed, a small diagram of the new shape.
 - **One intent per commit:** someone reading the history commit by commit must be able to tell what each one did and why (see section 4).
+
+### 12. Data Protection, Environment Shielding & Fiscal Invariant
+- **Zero-Egress Credential Isolation:** Never inspect, print, or load `.env` files or system environment variables into tool calls, prompts, or commit messages. Always inspect `.env.example` with dummy values when checking expected schemas.
+- **Path Sanitization:** When reporting paths, reference repository-relative paths (`src/module.py`), never absolute paths disclosing the host's `C:` volume or user directories.
+- **Fiscal & Payment XML Quarantine:** 
+  1. Automated scripts, tests, and agent loops must NEVER make network requests to live government fiscal systems (e.g., Polish KSeF production, Spanish FacturaE, Italian SDI) or banking/payment gateways.
+  2. All XML invoice generation tests MUST use the local `MockFiscalEngine` or `--dry-run` flag with test NIP/tax identifiers.
+  3. Any code executing financial transfers or invoice submissions requires explicit Human-in-the-Loop approval.

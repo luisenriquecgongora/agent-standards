@@ -1,5 +1,15 @@
 .env
 .env.*
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.json
+service_account.json
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
 .venv/
 __pycache__/
 .pytest_cache/
