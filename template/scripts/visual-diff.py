@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-visual-diff.py - Fast Visual Change & Architecture Delta Generator.
+visual-diff.py - Fast Visual Change, UI Snapshot & Architecture Delta Generator.
 Part of the agent-standards ecosystem.
 
 Analyzes git diffs (staged by default, or against HEAD/revisions) and generates:
   1. A PR Risk Radar & Blast Radius scorecard for instant 5-second human triage.
   2. A Semantic AST Call-Graph / Symbol Delta (function & API route level).
-  3. A colored Mermaid diagram conforming to docs/ARCHITECTURE.md standards.
-  4. A clean terminal-ready ASCII flow box for commit bodies and git logs.
-  5. An interactive standalone HTML inspection dashboard opened directly in Chrome/Firefox.
+  3. Automated UI & Desktop Component Diffs with Before/After visual comparison (Horizon 2).
+  4. A colored Mermaid diagram conforming to docs/ARCHITECTURE.md standards.
+  5. A clean terminal-ready ASCII flow box for commit bodies and git logs.
+  6. An interactive standalone HTML inspection dashboard opened directly in Chrome/Firefox.
 
 Usage:
-    python scripts/visual-diff.py                 # Mermaid + Risk Radar for staged changes
+    python scripts/visual-diff.py                 # Full PR Markdown (Radar + UI + Mermaid)
     python scripts/visual-diff.py --ascii         # ASCII box output for commit bodies
     python scripts/visual-diff.py --open          # Render and launch in browser
     python scripts/visual-diff.py --head          # Inspect last commit (HEAD~1..HEAD)
@@ -22,12 +23,15 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
+import io
 import os
 import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
 
 def get_repo_root() -> Path:
     res = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
@@ -53,17 +57,14 @@ def get_git_changes(mode: str, revision_range: str | None = None) -> list[tuple[
     elif mode == "staged":
         cmd.append("--cached")
     elif mode == "unstaged":
-        pass  # git diff --name-status
+        pass
     elif mode == "auto":
-        # Check staged first
         staged_res = subprocess.run(["git", "diff", "--cached", "--name-status", "-M"], capture_output=True, text=True)
         if staged_res.stdout.strip():
             return parse_git_status_output(staged_res.stdout)
-        # Check working tree against HEAD
         wt_res = subprocess.run(["git", "diff", "HEAD", "--name-status", "-M"], capture_output=True, text=True)
         if wt_res.stdout.strip():
             return parse_git_status_output(wt_res.stdout)
-        # Fallback to last commit
         cmd.extend(["HEAD~1", "HEAD"])
 
     res = subprocess.run(cmd, capture_output=True, text=True)
@@ -92,8 +93,13 @@ def get_file_content_at_ref(path_str: str, ref: str) -> str:
     return res.stdout if res.returncode == 0 else ""
 
 
+def get_file_bytes_at_ref(path_str: str, ref: str) -> bytes | None:
+    """Retrieve binary file content from git at a given revision."""
+    res = subprocess.run(["git", "show", f"{ref}:{path_str}"], capture_output=True)
+    return res.stdout if res.returncode == 0 else None
+
+
 def extract_python_symbols(code: str) -> dict[str, str]:
-    """Extract top-level functions, methods, and route handlers with their AST dumps."""
     symbols = {}
     if not code.strip():
         return symbols
@@ -104,7 +110,6 @@ def extract_python_symbols(code: str) -> dict[str, str]:
 
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            # Check for route decorators (e.g. @app.get, @router.post)
             route = None
             for dec in node.decorator_list:
                 if isinstance(dec, ast.Call) and isinstance(dec.func, ast.Attribute):
@@ -122,24 +127,19 @@ def extract_python_symbols(code: str) -> dict[str, str]:
 
 
 def extract_ts_symbols(code: str) -> dict[str, str]:
-    """Extract exported functions, classes, and route handlers from TypeScript/JavaScript."""
     symbols = {}
     if not code.strip():
         return symbols
 
-    # Exported functions
     for match in re.finditer(r"export\s+(?:default\s+)?(?:async\s+)?function\s+([a-zA-Z0-9_]+)", code):
         symbols[f"export function {match.group(1)}()"] = match.group(0)
 
-    # Exported arrow functions / constants
     for match in re.finditer(r"export\s+const\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>", code):
         symbols[f"export const {match.group(1)}"] = match.group(0)
 
-    # Exported classes
     for match in re.finditer(r"export\s+(?:default\s+)?class\s+([a-zA-Z0-9_]+)", code):
         symbols[f"export class {match.group(1)}"] = match.group(0)
 
-    # API endpoints (Express, Next.js, Hono, Fastify)
     for match in re.finditer(r"(?:app|router)\.(get|post|put|delete|patch)\(\s*['\"`]([^'\"`]+)['\"`]", code):
         symbols[f"{match.group(1).upper()} {match.group(2)}"] = match.group(0)
 
@@ -147,7 +147,6 @@ def extract_ts_symbols(code: str) -> dict[str, str]:
 
 
 def extract_semantic_changes(file_path: str, status: str, revision_range: str | None = None) -> list[tuple[str, str]]:
-    """Extract symbol-level changes (added, modified, removed)."""
     p = file_path.lower()
     is_py = p.endswith(".py")
     is_ts = p.endswith((".ts", ".tsx", ".js", ".jsx"))
@@ -155,7 +154,6 @@ def extract_semantic_changes(file_path: str, status: str, revision_range: str | 
     if not (is_py or is_ts):
         return []
 
-    # Determine old and new content
     old_code = ""
     new_code = ""
 
@@ -183,23 +181,113 @@ def extract_semantic_changes(file_path: str, status: str, revision_range: str | 
     new_symbols = extract_python_symbols(new_code) if is_py else extract_ts_symbols(new_code)
 
     results: list[tuple[str, str]] = []
-
-    # Added
     for sym in sorted(set(new_symbols) - set(old_symbols)):
         results.append(("+", sym))
-    # Removed
     for sym in sorted(set(old_symbols) - set(new_symbols)):
         results.append(("-", sym))
-    # Modified
     for sym in sorted(set(old_symbols) & set(new_symbols)):
         if old_symbols[sym] != new_symbols[sym]:
             results.append(("~", sym))
 
-    return results[:5]  # Cap to top 5 load-bearing symbols per file
+    return results[:5]
+
+
+def detect_ui_changes(changes: list[tuple[str, str, str | None]]) -> list[tuple[str, str]]:
+    """Detect modified UI components, styling, templates, and visual assets."""
+    ui_extensions = (
+        ".tsx", ".jsx", ".vue", ".svelte",
+        ".css", ".scss", ".sass", ".less",
+        ".html", ".ejs", ".hbs",
+        ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"
+    )
+    ui_files = []
+    for status, file_path, _ in changes:
+        p = file_path.lower()
+        if p.endswith(ui_extensions) or any(d in p for d in ("renderer/", "components/", "apps/desktop/", "apps/browser-extension/")):
+            ui_files.append((status, file_path))
+    return ui_files
+
+
+def generate_image_diffs(ui_files: list[tuple[str, str]], revision_range: str | None = None) -> list[dict]:
+    """Generate before/after visual image comparisons using PIL when image assets are touched."""
+    try:
+        from PIL import Image, ImageChops
+    except ImportError:
+        return []
+
+    diffs = []
+    image_exts = (".png", ".webp", ".jpg", ".jpeg")
+    target_images = [fp for _, fp in ui_files if fp.lower().endswith(image_exts)]
+
+    # Check for repo-level preview images (e.g. preview.png, shot.png, <repo>_preview.png)
+    if not target_images:
+        for candidate in ("preview.png", "shot.png", f"{ROOT.name}_preview.png", f"{Path.cwd().name}_preview.png"):
+            p = ROOT / candidate
+            if not p.is_file():
+                p = Path.cwd() / candidate
+            if p.is_file():
+                target_images.append(str(p.relative_to(ROOT) if p.is_relative_to(ROOT) else p.name))
+                break
+
+    base_ref = "HEAD"
+    if revision_range and "..." in revision_range:
+        base_ref = revision_range.split("...")[0]
+    elif revision_range and ".." in revision_range:
+        base_ref = revision_range.split("..")[0]
+
+    for img_path_str in target_images[:2]:
+        disk_path = ROOT / img_path_str
+        if not disk_path.is_file():
+            disk_path = Path.cwd() / img_path_str
+        if not disk_path.is_file():
+            continue
+
+        before_bytes = get_file_bytes_at_ref(img_path_str, base_ref)
+        if not before_bytes:
+            continue
+
+        try:
+            im_before = Image.open(io.BytesIO(before_bytes)).convert("RGB")
+            im_after = Image.open(disk_path).convert("RGB")
+            if im_before.size != im_after.size:
+                im_after_resized = im_after.resize(im_before.size)
+            else:
+                im_after_resized = im_after
+
+            diff = ImageChops.difference(im_before, im_after_resized)
+            bbox = diff.getbbox()
+
+            w, h = im_before.size
+            composite = Image.new("RGB", (w * 3, h))
+            composite.paste(im_before, (0, 0))
+            composite.paste(diff, (w, 0))
+            composite.paste(im_after_resized, (w * 2, 0))
+
+            buf_before = io.BytesIO()
+            buf_after = io.BytesIO()
+            buf_diff = io.BytesIO()
+            buf_comp = io.BytesIO()
+
+            im_before.save(buf_before, format="PNG")
+            im_after.save(buf_after, format="PNG")
+            diff.save(buf_diff, format="PNG")
+            composite.save(buf_comp, format="PNG")
+
+            diffs.append({
+                "file": img_path_str,
+                "changed": bbox is not None,
+                "before_b64": "data:image/png;base64," + base64.b64encode(buf_before.getvalue()).decode("ascii"),
+                "after_b64": "data:image/png;base64," + base64.b64encode(buf_after.getvalue()).decode("ascii"),
+                "diff_b64": "data:image/png;base64," + base64.b64encode(buf_diff.getvalue()).decode("ascii"),
+                "composite_b64": "data:image/png;base64," + base64.b64encode(buf_comp.getvalue()).decode("ascii"),
+            })
+        except Exception:
+            continue
+
+    return diffs
 
 
 def classify_file(path_str: str) -> str:
-    """Classify file into standard architecture category."""
     p = path_str.lower()
     if p.endswith((".md", ".txt", ".rst")) or p.startswith("docs/"):
         return "docs"
@@ -216,8 +304,11 @@ def sanitize_node_id(text: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_]", "_", text).strip("_")
 
 
-def generate_risk_radar(changes: list[tuple[str, str, str | None]], semantic_map: dict[str, list[tuple[str, str]]]) -> str:
-    """Generate a 5-second PR Risk Radar & Blast Radius Scorecard."""
+def generate_risk_radar(
+    changes: list[tuple[str, str, str | None]],
+    semantic_map: dict[str, list[tuple[str, str]]],
+    ui_files: list[tuple[str, str]]
+) -> str:
     total_files = len(changes)
     modules = set()
     has_schema = False
@@ -234,35 +325,32 @@ def generate_risk_radar(changes: list[tuple[str, str, str | None]], semantic_map
         if any(term in p for term in ("test", "spec")):
             has_tests = True
 
-    # Check semantic symbols for API shifts
     for file_path, syms in semantic_map.items():
         for change_type, sym_name in syms:
             if sym_name.startswith(("GET", "POST", "PUT", "DELETE", "PATCH", "route ")):
                 has_api_shift = True
 
-    # Compute risk level
     if has_schema or total_files > 8 or len(modules) > 3:
         risk_level = "🔴 **HIGH RISK** — Wide blast radius or database/schema modifications."
-    elif has_api_shift or len(modules) > 1:
-        risk_level = "🟡 **MEDIUM RISK** — Cross-module shift or modified API routes."
+    elif has_api_shift or len(modules) > 1 or len(ui_files) > 4:
+        risk_level = "🟡 **MEDIUM RISK** — Cross-module shift, UI modifications, or altered API routes."
     else:
         risk_level = "🟢 **LOW RISK** — Changes are isolated to internal logic with zero schema impact."
 
-    # Blast rating
     blast_status = "🟢 Contained" if len(modules) <= 2 else "🟡 Cross-Module"
     blast_desc = f"{len(modules)} package(s) touched (`{', '.join(sorted(modules)[:3])}`)"
 
-    # API rating
     api_status = "🟡 Endpoint Shift" if has_api_shift else "🟢 Internal Only"
     api_desc = "API routes added or re-routed" if has_api_shift else "Zero public endpoints altered"
 
-    # Schema rating
     schema_status = "⚠️ DDL / Schema Impact" if has_schema else "🟢 Safe"
     schema_desc = "Database models or migrations modified" if has_schema else "Zero database/migration files modified"
 
-    # Verification rating
     test_status = "🟢 Covered" if has_tests else "🟡 Notice"
     test_desc = "Test specs included in changeset" if has_tests else "No test files staged alongside code"
+
+    ui_desc = f"{len(ui_files)} component(s) modified" if ui_files else "No UI or styling changes"
+    ui_status = "🎨 Visual Review" if ui_files else "🟢 No UI Impact"
 
     lines = [
         "### 🎯 PR Risk Radar & Blast Scorecard",
@@ -273,6 +361,7 @@ def generate_risk_radar(changes: list[tuple[str, str, str | None]], semantic_map
         f"| **Blast Radius** | {blast_desc} | {blast_status} |",
         f"| **Interface / API** | {api_desc} | {api_status} |",
         f"| **Schema & Data** | {schema_desc} | {schema_status} |",
+        f"| **UI & Visual Layer** | {ui_desc} | {ui_status} |",
         f"| **Verification Invariant** | {test_desc} | {test_status} |",
         "| **Confidential Quarantine** | 0 credential or environment files detected | 🟢 Safe |",
         "",
@@ -280,8 +369,40 @@ def generate_risk_radar(changes: list[tuple[str, str, str | None]], semantic_map
     return "\n".join(lines)
 
 
+def generate_ui_summary(ui_files: list[tuple[str, str]], image_diffs: list[dict]) -> str:
+    """Generate the UI & Visual Delta summary section."""
+    if not ui_files:
+        return ""
+
+    lines = [
+        "### 🎨 UI & Component Visual Changes",
+        f"The following **{len(ui_files)}** UI components, stylesheets, or visual assets were modified:",
+        "",
+    ]
+    for status, file_path in ui_files[:8]:
+        st_icon = {"A": "✨ Added", "M": "⚡ Modified", "D": "🗑️ Removed", "R": "↪️ Renamed"}.get(status, status)
+        lines.append(f"- {st_icon}: `{file_path}`")
+
+    if len(ui_files) > 8:
+        lines.append(f"- *...and {len(ui_files) - 8} more UI files.*")
+
+    if image_diffs:
+        lines.extend([
+            "",
+            "> 🖼️ **Visual Comparison Ready:** Side-by-side snapshot comparison computed.",
+            "> Run `python scripts/visual-diff.py --open` to inspect the interactive Before/After comparison slider in Chrome.",
+        ])
+    else:
+        lines.extend([
+            "",
+            "> 💡 **Review Tip:** Run `python scripts/visual-diff.py --open` to inspect the full visual dashboard before merging.",
+        ])
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def generate_mermaid(changes: list[tuple[str, str, str | None]], semantic_map: dict[str, list[tuple[str, str]]]) -> str:
-    """Generate a Mermaid diagram matching docs/ARCHITECTURE.md palette with semantic call graph nodes."""
     lines = [
         "```mermaid",
         "flowchart TD",
@@ -329,7 +450,6 @@ def generate_mermaid(changes: list[tuple[str, str, str | None]], semantic_map: d
                 cat = classify_file(file_path)
                 node_classes.append(f"    class {node_id} {cat}")
 
-            # Append semantic AST symbols if discovered
             symbols = semantic_map.get(file_path, [])
             for sym_idx, (sym_type, sym_name) in enumerate(symbols):
                 sym_id = f"{node_id}_s{sym_idx}"
@@ -361,7 +481,6 @@ def generate_mermaid(changes: list[tuple[str, str, str | None]], semantic_map: d
 
 
 def generate_ascii(changes: list[tuple[str, str, str | None]], semantic_map: dict[str, list[tuple[str, str]]]) -> str:
-    """Generate a clean ASCII box flow diagram for commit bodies and terminal inspect."""
     if not changes:
         return "No changes detected."
 
@@ -399,11 +518,25 @@ def generate_ascii(changes: list[tuple[str, str, str | None]], semantic_map: dic
     return "\n".join(lines)
 
 
-def open_visual_in_browser(risk_radar: str, mermaid_content: str, ascii_content: str, changes_count: int):
-    """Generate standalone HTML preview and launch it in the browser."""
+def open_visual_in_browser(
+    risk_radar: str,
+    ui_summary: str,
+    mermaid_content: str,
+    ascii_content: str,
+    image_diffs: list[dict],
+    changes_count: int
+):
     script_opener = ROOT / "scripts" / "open-artifact.py"
     temp_dir = Path(tempfile.gettempdir())
     html_report = temp_dir / "visual_diff_inspection.md"
+
+    image_section = ""
+    if image_diffs:
+        image_section = "\n## 🖼️ UI Visual Snapshots & Pixel Difference\n\n"
+        for diff_data in image_diffs:
+            image_section += f"### Asset: `{diff_data['file']}`\n\n"
+            image_section += "**Visual Strip: [Before (Base)] ──► [Pixel Difference Highlight] ──► [After (Current)]**\n\n"
+            image_section += f"<div class='rounded-xl overflow-hidden border border-slate-700 my-4 shadow-xl'><img src='{diff_data['composite_b64']}' class='w-full h-auto block' /></div>\n\n"
 
     md_content = f"""# Visual Change & Architecture Inspection Report
 
@@ -413,6 +546,10 @@ Generated for fast human verification before committing or pushing.
 ---
 
 {risk_radar}
+
+{ui_summary}
+
+{image_section}
 
 ---
 
@@ -456,19 +593,24 @@ def main():
         print("visual-diff: No changes detected to visualize.", file=sys.stderr)
         return
 
-    # Extract semantic AST symbols for every file
+    # Semantic AST extraction
     semantic_map: dict[str, list[tuple[str, str]]] = {}
     for status, file_path, _ in changes:
         syms = extract_semantic_changes(file_path, status, args.range)
         if syms:
             semantic_map[file_path] = syms
 
-    risk_radar = generate_risk_radar(changes, semantic_map)
+    # UI component & image diff detection
+    ui_files = detect_ui_changes(changes)
+    image_diffs = generate_image_diffs(ui_files, args.range) if ui_files else []
+
+    risk_radar = generate_risk_radar(changes, semantic_map, ui_files)
+    ui_summary = generate_ui_summary(ui_files, image_diffs)
     mermaid_out = generate_mermaid(changes, semantic_map)
     ascii_out = generate_ascii(changes, semantic_map)
 
     if args.open:
-        open_visual_in_browser(risk_radar, mermaid_out, ascii_out, len(changes))
+        open_visual_in_browser(risk_radar, ui_summary, mermaid_out, ascii_out, image_diffs, len(changes))
         return
 
     if args.radar:
@@ -478,8 +620,7 @@ def main():
     elif args.mermaid:
         output_text = mermaid_out
     else:
-        # Full PR format: Risk Radar + Mermaid
-        output_text = f"{risk_radar}\n{mermaid_out}"
+        output_text = f"{risk_radar}\n{ui_summary}\n{mermaid_out}"
 
     if args.output:
         Path(args.output).write_text(output_text, encoding="utf-8")

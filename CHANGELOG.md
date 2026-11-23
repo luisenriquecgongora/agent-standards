@@ -3,6 +3,13 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.3
+- Automated UI & Desktop Visual Snapshots (Horizon 2):
+  - Added UI & styling component detection (`.tsx`, `.jsx`, `.vue`, `.css`, templates) to `scripts/visual-diff.py`.
+  - Added automated before/after image diffing via PIL with 3-panel composite strips (`[Before] ──► [Pixel Diff Highlight] ──► [After]`).
+  - Added `UI & Visual Layer` assessment dimension to the PR Risk Radar.
+  - Added dedicated UI visual changes section to PR markdown and browser viewer (`--open`).
+
 ## 1.4.2
 - Semantic AST Call-Graph & PR Risk Radar:
   - Added AST symbol parsing (Python `ast` & TypeScript/JavaScript route/symbol extraction) to `scripts/visual-diff.py`.
