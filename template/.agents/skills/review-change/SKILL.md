@@ -11,7 +11,7 @@ Do not report style preferences the linters do not enforce.
 
 ## 1. Gather the change
 
-- Local work: `git status` and `git diff` (staged and unstaged).
+- Local work: `git status` and `git diff` (staged and unstaged). Inspect visually with `python scripts/visual-diff.py --open`.
 - A branch: `git log --oneline <base>..HEAD` and `git diff <base>...HEAD`.
 
 ## 2. Verify, do not trust
@@ -23,6 +23,7 @@ for a check the change touches. Quote failures exactly.
 
 - Does every behavior change come with a test that fails without it?
 - Does a change to the repo's parts or data flow update `docs/ARCHITECTURE.md` and its diagram (`AGENTS.md`, section 11)?
+- Does the PR include a verified Visual Delta diagram (`python scripts/visual-diff.py`)?
 - Error paths: missing optional dependencies, network failures and bad input degrade and log, they do not crash.
 - TODO: add this repository's correctness traps (code paths that must change together, generated files).
 

@@ -3,6 +3,17 @@
 Bump `version` in `standards.json` whenever a synced part changes, and add an entry here:
 `sync` shows each repo the entries newer than the version in its `.agent-standards` stamp.
 
+## 1.4.0
+- Visual Change & Architecture Traceability:
+  - Added `scripts/visual-diff.py` to auto-generate Mermaid architecture flowcharts, ASCII commit boxes, and interactive browser reports (`scripts/visual-diff.py --open`).
+  - Added `scripts/open-artifact.py` to render any markdown plan/artifact with Mermaid into standalone HTML and launch directly in Chrome/Firefox.
+  - Updated `.github/PULL_REQUEST_TEMPLATE.md` with the standard ⚡ Visual Delta section for fast human PR inspection.
+  - Updated `AGENTS.md` section 11 to require visual delta inspection before PR/commit.
+  - Updated `.agents/skills/review-change/SKILL.md` to checklist visual inspection.
+
+## 1.3.0
+- Added secret scanning and confidential data shielding to verify.py and pre-commit hooks.
+
 ## 1.2.3
 - `AGENTS.md` section 1: Added Autonomous Execution Guidelines (high bias for action, zero unnecessary questions, convention over consultation, inspect before inquiring, escalation boundary, non-blocking manifest execution).
 - `AGENTS.md` section 10: Documented AGY (`agy`) `--mode auto` / `settings.json` configuration to prevent interactive tool approval prompts.
