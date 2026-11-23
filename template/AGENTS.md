@@ -58,7 +58,9 @@ All commits must follow:
 - TODO: things a newcomer would get wrong (hard-coded ports, generated files, build order).
 
 ### 9. Never
-- Never read, print or commit `.env` files or API keys.
+- Never read, print, search or commit `.env` files, `.env.*` variants, API keys, or private keys.
+- Never pass unshielded environment variables or Windows `C:` volume user paths into external requests or prompt contexts.
+- Never execute live network submissions to external XML servers (such as Polish KSeF 2.0, Spanish FacturaE, Italian SDI, or banking CAMT.053) or payment endpoints. Always use local mocks, test tax IDs, and dry-run flags.
 - Never force-push or rewrite published history.
 - Never commit build output, `node_modules/` or virtualenvs.
 - Never execute destructive or data-dropping commands without explicit human approval (see section 1).
@@ -79,3 +81,11 @@ Code changes arrive faster than people can read them, so a person must be able t
 - **Keep the map current:** `docs/ARCHITECTURE.md` shows the repo's parts and how data flows between them. A change that adds, removes or rewires a part updates that diagram in the same pull request.
 - **Explain every pull request:** what changed and why, how it was verified, and, when a structure or flow changed, a small diagram of the new shape.
 - **One intent per commit:** someone reading the history commit by commit must be able to tell what each one did and why (see section 4).
+
+### 12. Data Protection, Environment Shielding & Fiscal Invariant
+- **Zero-Egress Credential Isolation:** Never inspect, print, or load `.env` files or system environment variables into tool calls, prompts, or commit messages. Always inspect `.env.example` with dummy values when checking expected schemas.
+- **Path Sanitization:** When reporting paths, reference repository-relative paths (`src/module.py`), never absolute paths disclosing the host's `C:` volume or user directories.
+- **Fiscal & Payment XML Quarantine:** 
+  1. Automated scripts, tests, and agent loops must NEVER make network requests to live government fiscal systems (e.g., Polish KSeF production, Spanish FacturaE, Italian SDI) or banking/payment gateways.
+  2. All XML invoice generation tests MUST use the local `MockFiscalEngine` or `--dry-run` flag with test NIP/tax identifiers.
+  3. Any code executing financial transfers or invoice submissions requires explicit Human-in-the-Loop approval.

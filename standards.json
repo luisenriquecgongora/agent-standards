@@ -1,5 +1,5 @@
 {
-  "version": "1.2.3",
+  "version": "1.3.0",
   "synced_files": [
     "CLAUDE.md",
     ".claude/hooks/lint_edited.py",
@@ -14,7 +14,7 @@
   },
   "agents": {
     "path": "AGENTS.md",
-    "shared_sections": ["1", "2", "4", "10", "11"]
+    "shared_sections": ["1", "2", "4", "9", "10", "11", "12"]
   },
   "stamp": ".agent-standards",
   "discover": {
